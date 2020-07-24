@@ -18,7 +18,7 @@ const rideSchema = new Schema(
 		},
 		contact: {
 			type: String,
-			default: '-',
+			default: undefined,
 		},
 		seats: {
 			type: Number,
@@ -26,13 +26,27 @@ const rideSchema = new Schema(
 		},
 		price: {
 			type: Number,
-			default: null,
+			default: undefined,
+		},
+		smoking: {
+			type: Boolean,
+			default: undefined,
+		},
+		car: {
+			type: String,
+			default: undefined,
 		},
 		user: {
 			type: Schema.Types.ObjectId,
 			ref: 'User',
 			required: true,
 		},
+		/* users: [
+			{
+				type: Schema.Types.ObjectId,
+				ref: 'User',
+			},
+		], */
 	},
 	{ timestamps: true },
 );

@@ -1,17 +1,17 @@
 const Ride = require('../models/Ride');
 const User = require('../models/User');
+const ErrorResponse = require('../utils/errorResponse');
+//const asyncHandler = require('../middleware/async');
 
-const getIndex = async (req, res) => {
+const getIndex = async (req, res, next) => {
 	try {
 		const rides = await Ride.find();
 		if (!rides) {
-			const error = new Error('There are no rides');
-			error.statusCode = 404;
-			next(error);
+			return next(new ErrorResponse('There are no rides', 404));
 		}
 		res.status(200).json(rides);
 	} catch (error) {
-		res.json({ message: error });
+		next(error);
 	}
 };
 
@@ -19,12 +19,14 @@ const getUserRides = async (req, res, next) => {
 	const id = req.params.id;
 	try {
 		const foundUser = await User.findById(id);
+		if (!foundUser) {
+			return next(new ErrorResponse('User could not be found', 404));
+		}
 		let rides = [];
 		for (let i = 0; i < foundUser.rides.length; i++) {
 			let ride = await Ride.findById(foundUser.rides[i]);
 			rides.push(ride);
 		}
-
 		res.status(200).json(rides);
 	} catch (error) {
 		next(error);
@@ -38,8 +40,10 @@ const postRide = async (req, res, next) => {
 	const contact = req.body.contact;
 	const seats = req.body.seats;
 	const price = req.body.price;
-	const userId = req.userId;
-	console.log({ start, end, date, contact, seats, price, userId });
+	const userId = req.body.userId;
+	const smoking = req.body.smoking;
+	const car = req.body.car;
+
 	const ride = new Ride({
 		start,
 		end,
@@ -48,8 +52,10 @@ const postRide = async (req, res, next) => {
 		seats,
 		price,
 		user: userId,
+		smoking,
+		car,
 	});
-
+	console.log(ride);
 	try {
 		const savedRide = await ride.save();
 		const foundUser = await User.findById(userId);
@@ -70,9 +76,7 @@ const getRide = async (req, res, next) => {
 	try {
 		const ride = await Ride.findById(id);
 		if (!ride) {
-			const error = new Error('Could not find ride');
-			error.statusCode = 404;
-			next(error);
+			return next(new ErrorResponse('Could not find ride', 404));
 		}
 		res.status(200).json(ride);
 	} catch (error) {
@@ -84,14 +88,10 @@ const deleteRide = async (req, res, next) => {
 	try {
 		const foundRide = await Ride.findById(id);
 		if (!foundRide) {
-			const error = new Error('Could not find ride');
-			error.statusCode = 404;
-			next(error);
+			return next(new ErrorResponse('Could not find ride', 404));
 		}
 		if (foundRide.user.toString() !== req.userId) {
-			const error = new Error('Not authorized');
-			error.statusCode = 404;
-			next(error);
+			return next(new ErrorResponse('Not authorized', 403));
 		}
 		const removedRide = await Ride.deleteOne({ _id: id });
 		const userToUpdate = await User.findById(req.userId);
@@ -111,14 +111,14 @@ const updateRide = async (req, res, next) => {
 	const contact = req.body.contact;
 	const seats = req.body.seats;
 	const price = req.body.price;
-	console.log('Id ' + id);
+	const smoking = req.body.smoking;
+	const car = req.body.car;
+
 	try {
 		const foundRide = await Ride.findById(id);
-		console.log(foundRide);
+
 		if (foundRide.user.toString() !== req.userId) {
-			const error = new Error('Not authorized');
-			error.statusCode = 403;
-			next(error);
+			return next(new ErrorResponse('Not authorized', 403));
 		}
 		foundRide.start = start;
 		foundRide.end = end;
@@ -126,6 +126,8 @@ const updateRide = async (req, res, next) => {
 		foundRide.contact = contact;
 		foundRide.seats = seats;
 		foundRide.price = price;
+		foundRide.smoking = smoking;
+		foundRide.car = car;
 
 		const savedRide = await foundRide.save();
 		res.json({ message: 'Ride updated', ride: savedRide });

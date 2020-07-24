@@ -2,11 +2,11 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const dotenv = require('dotenv');
 
+const errorHandler = require('./middleware/error');
 const ridesRoutes = require('./routes/rides');
 const authRoutes = require('./routes/auth');
-
-const dotenv = require('dotenv');
 
 dotenv.config();
 
@@ -21,12 +21,7 @@ app.use(bodyParser.json());
 app.use('/rides', ridesRoutes);
 app.use('/auth', authRoutes);
 
-app.use((error, req, res, next) => {
-	const status = error.statusCode || 500;
-	const message = error.message;
-	const data = error.data;
-	res.status(status).json({ message, data });
-});
+app.use(errorHandler);
 
 mongoose.connect(
 	process.env.DB_URI,

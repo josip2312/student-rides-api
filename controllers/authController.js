@@ -1,10 +1,13 @@
 const { validationResult } = require('express-validator');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const sendgridTransport = require('nodemailer-sendgrid-transport');
 const jwt = require('jsonwebtoken');
+require('dotenv').config();
 
 const User = require('../models/User');
+const ErrorResponse = require('../utils/errorResponse');
 
 const transporter = nodemailer.createTransport(
 	sendgridTransport({
@@ -18,10 +21,7 @@ const register = async (req, res, next) => {
 	const errors = validationResult(req);
 
 	if (!errors.isEmpty()) {
-		const error = new Error('Validation failed');
-		error.statusCode = 422;
-		error.data = errors.array();
-		throw error;
+		return next(new ErrorResponse('Email address already exists'));
 	}
 	const name = req.body.name;
 	const lastname = req.body.lastname;
@@ -36,9 +36,8 @@ const register = async (req, res, next) => {
 			email,
 			password: hashedPassword,
 		});
-
 		const savedUser = await user.save();
-		await transporter.sendMail({
+		transporter.sendMail({
 			to: email,
 			from: process.env.FROM_EMAIL,
 			subject: 'You signed up!',
@@ -49,9 +48,6 @@ const register = async (req, res, next) => {
 			userId: savedUser._id,
 		});
 	} catch (err) {
-		if (!err.statusCode) {
-			err.statusCode = 500;
-		}
 		next(err);
 	}
 };
@@ -63,18 +59,17 @@ const login = async (req, res, next) => {
 	try {
 		const foundUser = await User.findOne({ email: email });
 		if (!foundUser) {
-			const error = new Error(
-				'A user with this email could not be found',
+			return next(
+				new ErrorResponse(
+					'A user with this email could not be found',
+					401,
+				),
 			);
-			error.statusCode = 401;
-			throw error;
 		}
 
 		const comparison = await bcrypt.compare(password, foundUser.password);
 		if (!comparison) {
-			const error = new Error('Wrong password');
-			error.statusCode = 401;
-			throw error;
+			return next(new ErrorResponse('Wrong password', 401));
 		}
 		const token = jwt.sign(
 			{
@@ -89,9 +84,6 @@ const login = async (req, res, next) => {
 			userId: foundUser._id.toString(),
 		});
 	} catch (err) {
-		if (!err.statusCode) {
-			err.statusCode = 500;
-		}
 		next(err);
 	}
 };
@@ -100,16 +92,12 @@ const forgotPassword = async (req, res, next) => {
 	try {
 		const user = await User.findOne({ email: req.body.email });
 		if (!user) {
-			const error = new Error('Could not find user');
-			error.statusCode = 404;
-			throw error;
+			return next(new ErrorResponse('Could not find user', 404));
 		}
 		const resetToken = user.getResetPasswordToken();
 		await user.save();
 
-		const resetUrl = `${req.protocol}://${req.get(
-			'host',
-		)}/resetpassword/${resetToken}`;
+		const resetUrl = `${process.env.CLIENT_URL}/auth/newpassword/${resetToken}`;
 
 		const message = `Zatrazili ste resetiranje lozinke, klikni na link: ${resetUrl}`;
 
@@ -120,18 +108,54 @@ const forgotPassword = async (req, res, next) => {
 				subject: 'Password reset token',
 				html: `<h1>${message}</h1>`,
 			});
-			res.status(200).json({ success: true });
+			res.status(200).json({ success: true, data: 'Email sent' });
 		} catch (error) {
 			user.resetPasswordToken = undefined;
 			user.resetPasswordExpire = undefined;
 			await user.save();
 
 			error.statusCode = 500;
-			throw error;
+			return next(new ErrorResponse('Could not reset password', 500));
 		}
 	} catch (error) {
-		next(error);
+		next(err);
 	}
+};
+
+const resetPassword = async (req, res, next) => {
+	const resetToken = crypto
+		.createHash('sha256')
+		.update(req.params.resettoken)
+		.digest('hex');
+
+	const user = await User.findOne({
+		resetPasswordToken: resetToken,
+		resetPasswordExpire: { $gt: Date.now() },
+	});
+
+	if (!user) {
+		return next(new ErrorResponse('Invalid token', 400));
+	}
+	const password = req.body.password;
+	const hashedPassword = await bcrypt.hash(password, 12);
+
+	user.password = hashedPassword;
+	user.resetPasswordToken = undefined;
+	user.resetPasswordExpire = undefined;
+
+	await user.save();
+	const token = jwt.sign(
+		{
+			email: user.email,
+			userId: user._id.toString(),
+		},
+		process.env.JWT_SECRET,
+		{ expiresIn: '1h' },
+	);
+	res.status(200).json({
+		token: token,
+		userId: user._id.toString(),
+	});
 };
 
 const getUser = async (req, res, next) => {
@@ -139,9 +163,7 @@ const getUser = async (req, res, next) => {
 	try {
 		const user = await User.findById(id);
 		if (!user) {
-			const error = new Error('Could not find user');
-			error.statusCode = 404;
-			next(error);
+			next(new ErrorResponse('Could not find user', 404));
 		}
 		res.status(200).json(user);
 	} catch (error) {
@@ -152,6 +174,7 @@ const getUser = async (req, res, next) => {
 module.exports = {
 	register,
 	login,
-	forgotPassword,
 	getUser,
+	forgotPassword,
+	resetPassword,
 };

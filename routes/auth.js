@@ -30,6 +30,7 @@ router.post(
 );
 router.post('/login', authController.login);
 router.post('/forgotpassword', authController.forgotPassword);
+router.put('/resetpassword/:resettoken', authController.resetPassword);
 
 router.get('/user/:id', authController.getUser);
 
