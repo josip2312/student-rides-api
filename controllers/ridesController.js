@@ -137,6 +137,33 @@ const updateRide = async (req, res, next) => {
 	}
 };
 
+const reserveRide = async (req, res, next) => {
+	const userId = req.body.userId;
+	const rideId = req.params.id;
+
+	try {
+		const foundRide = await Ride.findById(rideId);
+
+		if (!foundRide) {
+			return next(new ErrorResponse('No ride found', 404));
+		}
+		const userToAdd = await User.findById(userId);
+
+		for (let i = 0; i < foundRide.users.length; i++) {
+			if (foundRide.users[i]._id.toString() === userId.toString()) {
+				return next(new ErrorResponse('Already reserved', 403));
+			}
+		}
+
+		foundRide.users.push(userToAdd);
+		await foundRide.save();
+
+		res.json({ message: 'User added' });
+	} catch (error) {
+		next(error);
+	}
+};
+
 module.exports = {
 	getIndex,
 	getUserRides,
@@ -144,4 +171,5 @@ module.exports = {
 	getRide,
 	deleteRide,
 	updateRide,
+	reserveRide,
 };

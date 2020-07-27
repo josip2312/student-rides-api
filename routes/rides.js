@@ -15,6 +15,8 @@ router.post('/', isAuth, ridesController.postRide);
 
 router.get('/user/:id', ridesController.getRide);
 
+router.post('/:id', ridesController.reserveRide);
+
 router.delete('/:id', isAuth, ridesController.deleteRide);
 
 router.patch('/:id', isAuth, ridesController.updateRide);

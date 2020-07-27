@@ -41,12 +41,11 @@ const rideSchema = new Schema(
 			ref: 'User',
 			required: true,
 		},
-		/* users: [
+		users: [
 			{
-				type: Schema.Types.ObjectId,
-				ref: 'User',
+				type: Object,
 			},
-		], */
+		],
 	},
 	{ timestamps: true },
 );
