@@ -1,4 +1,5 @@
 const { validationResult } = require('express-validator');
+const path = require('path');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
@@ -163,9 +164,63 @@ const getUser = async (req, res, next) => {
 	try {
 		const user = await User.findById(id);
 		if (!user) {
-			next(new ErrorResponse('Could not find user', 404));
+			return next(new ErrorResponse('Could not find user', 404));
 		}
 		res.status(200).json(user);
+	} catch (error) {
+		next(error);
+	}
+};
+
+const uploadUserPhoto = async (req, res, next) => {
+	const user = await User.findById(req.params.id);
+
+	if (!user) {
+		return next(new ErrorResponse('Could not find user', 404));
+	}
+
+	if (!req.files) {
+		return next(new ErrorResponse('Please upload a file', 400));
+	}
+
+	const file = req.files.image;
+	if (!file.mimetype.startsWith('image')) {
+		return next(new ErrorResponse('Please upload an image file', 400));
+	}
+
+	if (file.size > process.env.MAX_FILE_UPLOAD) {
+		return next(
+			new ErrorResponse(
+				`Please upload an image less than ${process.env.MAX_FILE_UPLOAD}`,
+				400,
+			),
+		);
+	}
+	//custom filename
+	file.name = `photo_${user._id}${path.parse(file.name).ext}`;
+
+	file.mv(`${process.env.FILE_UPLOAD_PATH}/${file.name}`, async (err) => {
+		if (err) {
+			console.error(err);
+			return next(new ErrorResponse(`Problem with file upload`, 500));
+		}
+		await User.findByIdAndUpdate(req.params.id, { photo: file.name });
+		res.status(200).json({
+			success: true,
+			data: file.name,
+		});
+	});
+
+	console.log(file.name);
+};
+const getUserPhoto = async (req, res, next) => {
+	const id = req.params.id;
+	try {
+		const user = await User.findById(id);
+		if (!user) {
+			return next(new ErrorResponse('Could not find user', 404));
+		}
+		res.status(200).json(user.photo);
 	} catch (error) {
 		next(error);
 	}
@@ -177,4 +232,6 @@ module.exports = {
 	getUser,
 	forgotPassword,
 	resetPassword,
+	uploadUserPhoto,
+	getUserPhoto,
 };

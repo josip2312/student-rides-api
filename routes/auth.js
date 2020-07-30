@@ -31,7 +31,8 @@ router.post(
 router.post('/login', authController.login);
 router.post('/forgotpassword', authController.forgotPassword);
 router.put('/resetpassword/:resettoken', authController.resetPassword);
-
 router.get('/user/:id', authController.getUser);
+router.put('/user/:id/photo', authController.uploadUserPhoto);
+router.get('/user/:id/photo', authController.getUserPhoto);
 
 module.exports = router;

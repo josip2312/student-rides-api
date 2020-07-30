@@ -19,7 +19,10 @@ const userSchema = new Schema({
 		type: String,
 		required: true,
 	},
-
+	photo: {
+		type: String,
+		default: undefined,
+	},
 	rides: [
 		{
 			type: Schema.Types.ObjectId,
