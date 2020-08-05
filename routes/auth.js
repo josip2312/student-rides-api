@@ -7,12 +7,32 @@ const { body } = require('express-validator');
 
 const authController = require('../controllers/authController');
 
+const uppercaseFirst = (value) => {
+	return value.charAt(0).toUpperCase() + value.slice(1);
+};
+
 router.post(
 	'/register',
 
 	[
-		body('name').trim().not().isEmpty(),
-		body('lastname').trim().not().isEmpty(),
+		body('name')
+			.trim()
+			.not()
+			.isEmpty()
+			.escape()
+			.customSanitizer((value) => {
+				return uppercaseFirst(value);
+			}),
+
+		body('lastname')
+			.trim()
+			.not()
+			.isEmpty()
+			.escape()
+			.customSanitizer((value) => {
+				return uppercaseFirst(value);
+			}),
+
 		body('email')
 			.isEmail()
 			.withMessage('Please enter a valid email')

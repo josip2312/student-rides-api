@@ -156,6 +156,7 @@ const reserveRide = async (req, res, next) => {
 		}
 
 		foundRide.users.push(userToAdd);
+		foundRide.seats = foundRide.seats - 1;
 		await foundRide.save();
 
 		res.json({ message: 'User added' });
