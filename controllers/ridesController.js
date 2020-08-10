@@ -7,7 +7,7 @@ const getIndex = async (req, res, next) => {
 	try {
 		const rides = await Ride.find();
 		if (!rides) {
-			return next(new ErrorResponse('There are no rides', 404));
+			return next(new ErrorResponse('Nema voznji', 404));
 		}
 		res.status(200).json(rides);
 	} catch (error) {
@@ -20,7 +20,7 @@ const getUserRides = async (req, res, next) => {
 	try {
 		const foundUser = await User.findById(id);
 		if (!foundUser) {
-			return next(new ErrorResponse('User could not be found', 404));
+			return next(new ErrorResponse('Korisnik nije pronađen', 404));
 		}
 		let rides = [];
 		for (let i = 0; i < foundUser.rides.length; i++) {
@@ -76,7 +76,7 @@ const getRide = async (req, res, next) => {
 	try {
 		const ride = await Ride.findById(id);
 		if (!ride) {
-			return next(new ErrorResponse('Could not find ride', 404));
+			return next(new ErrorResponse('Voznja nije pronađena', 404));
 		}
 		res.status(200).json(ride);
 	} catch (error) {
@@ -88,10 +88,10 @@ const deleteRide = async (req, res, next) => {
 	try {
 		const foundRide = await Ride.findById(id);
 		if (!foundRide) {
-			return next(new ErrorResponse('Could not find ride', 404));
+			return next(new ErrorResponse('Voznja nije pronađena', 404));
 		}
 		if (foundRide.user.toString() !== req.userId) {
-			return next(new ErrorResponse('Not authorized', 403));
+			return next(new ErrorResponse('Nemate autorizaciju', 403));
 		}
 		const removedRide = await Ride.deleteOne({ _id: id });
 		const userToUpdate = await User.findById(req.userId);
@@ -118,7 +118,7 @@ const updateRide = async (req, res, next) => {
 		const foundRide = await Ride.findById(id);
 
 		if (foundRide.user.toString() !== req.userId) {
-			return next(new ErrorResponse('Not authorized', 403));
+			return next(new ErrorResponse('Nemate autorizaciju', 403));
 		}
 		foundRide.start = start;
 		foundRide.end = end;
@@ -145,13 +145,13 @@ const reserveRide = async (req, res, next) => {
 		const foundRide = await Ride.findById(rideId);
 
 		if (!foundRide) {
-			return next(new ErrorResponse('No ride found', 404));
+			return next(new ErrorResponse('Voznja nije pronađena', 404));
 		}
 		const userToAdd = await User.findById(userId);
 
 		for (let i = 0; i < foundRide.users.length; i++) {
 			if (foundRide.users[i]._id.toString() === userId.toString()) {
-				return next(new ErrorResponse('Already reserved', 403));
+				return next(new ErrorResponse('Voznja vec rezervirana', 403));
 			}
 		}
 

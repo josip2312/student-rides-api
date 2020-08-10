@@ -22,7 +22,7 @@ const register = async (req, res, next) => {
 	const errors = validationResult(req);
 
 	if (!errors.isEmpty()) {
-		return next(new ErrorResponse('Email address already exists'));
+		return next(new ErrorResponse('Email adresa već postoji'));
 	}
 	const name = req.body.name;
 	const lastname = req.body.lastname;
@@ -62,7 +62,7 @@ const login = async (req, res, next) => {
 		if (!foundUser) {
 			return next(
 				new ErrorResponse(
-					'A user with this email could not be found',
+					'Korisnik s tom email adresom nije pronađen',
 					401,
 				),
 			);
@@ -70,7 +70,7 @@ const login = async (req, res, next) => {
 
 		const comparison = await bcrypt.compare(password, foundUser.password);
 		if (!comparison) {
-			return next(new ErrorResponse('Wrong password', 401));
+			return next(new ErrorResponse('Neispravna lozinka', 401));
 		}
 		const token = jwt.sign(
 			{
@@ -93,7 +93,7 @@ const forgotPassword = async (req, res, next) => {
 	try {
 		const user = await User.findOne({ email: req.body.email });
 		if (!user) {
-			return next(new ErrorResponse('Could not find user', 404));
+			return next(new ErrorResponse('Korisnik ne postoji', 404));
 		}
 		const resetToken = user.getResetPasswordToken();
 		await user.save();
@@ -116,7 +116,9 @@ const forgotPassword = async (req, res, next) => {
 			await user.save();
 
 			error.statusCode = 500;
-			return next(new ErrorResponse('Could not reset password', 500));
+			return next(
+				new ErrorResponse('Ponovno postavljanje nije uspjelo', 500),
+			);
 		}
 	} catch (error) {
 		next(err);
@@ -164,7 +166,7 @@ const getUser = async (req, res, next) => {
 	try {
 		const user = await User.findById(id);
 		if (!user) {
-			return next(new ErrorResponse('Could not find user', 404));
+			return next(new ErrorResponse('Korisnik nije pronađen', 404));
 		}
 		res.status(200).json(user);
 	} catch (error) {
@@ -176,7 +178,7 @@ const uploadUserPhoto = async (req, res, next) => {
 	const user = await User.findById(req.params.id);
 
 	if (!user) {
-		return next(new ErrorResponse('Could not find user', 404));
+		return next(new ErrorResponse('Korisnik nije pronađen', 404));
 	}
 
 	if (!req.files) {
@@ -185,13 +187,13 @@ const uploadUserPhoto = async (req, res, next) => {
 
 	const file = req.files.image;
 	if (!file.mimetype.startsWith('image')) {
-		return next(new ErrorResponse('Please upload an image file', 400));
+		return next(new ErrorResponse('Datoteka mora biti slika', 400));
 	}
 
 	if (file.size > process.env.MAX_FILE_UPLOAD) {
 		return next(
 			new ErrorResponse(
-				`Please upload an image less than ${process.env.MAX_FILE_UPLOAD}`,
+				`'Datoteka mora biti manja od ${process.env.MAX_FILE_UPLOAD}`,
 				400,
 			),
 		);
@@ -218,7 +220,7 @@ const getUserPhoto = async (req, res, next) => {
 	try {
 		const user = await User.findById(id);
 		if (!user) {
-			return next(new ErrorResponse('Could not find user', 404));
+			return next(new ErrorResponse('Korisnik nije pronađen', 404));
 		}
 		res.status(200).json(user.photo);
 	} catch (error) {
