@@ -14,6 +14,7 @@ const userSchema = new Schema({
 	email: {
 		type: String,
 		required: true,
+		unique: true,
 	},
 	password: {
 		type: String,
@@ -23,13 +24,28 @@ const userSchema = new Schema({
 		type: String,
 		default: undefined,
 	},
+	contact: {
+		type: String,
+		default: undefined,
+	},
+	description: {
+		type: String,
+		default: undefined,
+	},
 	rides: [
 		{
 			type: Schema.Types.ObjectId,
 			ref: 'Ride',
 		},
 	],
-
+	reservedRides: [
+		{
+			type: Schema.Types.ObjectId,
+			ref: 'Ride',
+		},
+	],
+	//need unique id
+	notifications: [{ type: Object }],
 	resetPasswordToken: String,
 	resetPasswordExpire: Date,
 });

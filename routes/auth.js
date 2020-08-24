@@ -49,10 +49,17 @@ router.post(
 	authController.register,
 );
 router.post('/login', authController.login);
+
 router.post('/forgotpassword', authController.forgotPassword);
+
 router.put('/resetpassword/:resettoken', authController.resetPassword);
+
 router.get('/user/:id', authController.getUser);
+
+router.patch('/user/edit/:id', authController.editUser);
+
 router.put('/user/:id/photo', authController.uploadUserPhoto);
+
 router.get('/user/:id/photo', authController.getUserPhoto);
 
 module.exports = router;

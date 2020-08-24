@@ -7,18 +7,28 @@ const Ride = require('../models/Ride');
 
 const router = express.Router();
 
-router.get('/', ridesController.getIndex);
+router.get('/', ridesController.getAllRides);
 
-router.get('/:id', ridesController.getUserRides);
+router.get('/user/:id', ridesController.getUserRides);
+
+router.get('/user/reserved/:id', ridesController.getReservedRides);
 
 router.post('/', isAuth, ridesController.postRide);
 
-router.get('/user/:id', ridesController.getRide);
+router.get('/:id', ridesController.getSingleRide);
 
-router.post('/:id', ridesController.reserveRide);
+router.post('/ride/:id', ridesController.reserveRide);
 
-router.delete('/:id', isAuth, ridesController.deleteRide);
+router.patch('/ride/:id', isAuth, ridesController.updateRide);
 
-router.patch('/:id', isAuth, ridesController.updateRide);
+router.delete('/ride/:id', isAuth, ridesController.deleteRide);
+
+router.put('/notifications', isAuth, ridesController.readNotification);
+
+router.delete(
+	'/notifications/:id',
+	isAuth,
+	ridesController.deleteAllNotifications,
+);
 
 module.exports = router;

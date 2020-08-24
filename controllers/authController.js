@@ -30,7 +30,8 @@ const register = async (req, res, next) => {
 	const password = req.body.password;
 
 	try {
-		const hashedPassword = await bcrypt.hash(password, 12);
+		const salt = await bcrypt.genSalt();
+		const hashedPassword = await bcrypt.hash(password, salt);
 		const user = new User({
 			name,
 			lastname,
@@ -45,7 +46,7 @@ const register = async (req, res, next) => {
 			html: '<h1>You signed up </h1>',
 		});
 		res.status(201).json({
-			message: 'User created',
+			message: 'Registracija uspjesna',
 			userId: savedUser._id,
 		});
 	} catch (err) {
@@ -56,7 +57,7 @@ const register = async (req, res, next) => {
 const login = async (req, res, next) => {
 	const email = req.body.email;
 	const password = req.body.password;
-	let loadedUser;
+
 	try {
 		const foundUser = await User.findOne({ email: email });
 		if (!foundUser) {
@@ -83,6 +84,7 @@ const login = async (req, res, next) => {
 		res.status(200).json({
 			token: token,
 			userId: foundUser._id.toString(),
+			message: 'Ulogirani ste',
 		});
 	} catch (err) {
 		next(err);
@@ -99,7 +101,6 @@ const forgotPassword = async (req, res, next) => {
 		await user.save();
 
 		const resetUrl = `${process.env.CLIENT_URL}/auth/newpassword/${resetToken}`;
-
 		const message = `Zatrazili ste resetiranje lozinke, klikni na link: ${resetUrl}`;
 
 		try {
@@ -109,13 +110,14 @@ const forgotPassword = async (req, res, next) => {
 				subject: 'Password reset token',
 				html: `<h1>${message}</h1>`,
 			});
-			res.status(200).json({ success: true, data: 'Email sent' });
+			res.status(200).json({
+				success: true,
+				message: `Email poslan na adresu ${user.email}`,
+			});
 		} catch (error) {
 			user.resetPasswordToken = undefined;
 			user.resetPasswordExpire = undefined;
 			await user.save();
-
-			error.statusCode = 500;
 			return next(
 				new ErrorResponse('Ponovno postavljanje nije uspjelo', 500),
 			);
@@ -140,13 +142,15 @@ const resetPassword = async (req, res, next) => {
 		return next(new ErrorResponse('Invalid token', 400));
 	}
 	const password = req.body.password;
-	const hashedPassword = await bcrypt.hash(password, 12);
-
+	const salt = await bcrypt.genSalt();
+	const hashedPassword = await bcrypt.hash(password, salt);
 	user.password = hashedPassword;
+
 	user.resetPasswordToken = undefined;
 	user.resetPasswordExpire = undefined;
 
 	await user.save();
+
 	const token = jwt.sign(
 		{
 			email: user.email,
@@ -158,6 +162,7 @@ const resetPassword = async (req, res, next) => {
 	res.status(200).json({
 		token: token,
 		userId: user._id.toString(),
+		message: 'Ulogirani ste',
 	});
 };
 
@@ -168,12 +173,38 @@ const getUser = async (req, res, next) => {
 		if (!user) {
 			return next(new ErrorResponse('Korisnik nije pronađen', 404));
 		}
+		user.password = undefined;
 		res.status(200).json(user);
 	} catch (error) {
 		next(error);
 	}
 };
+const editUser = async (req, res, next) => {
+	const id = req.params.id;
+	const name = req.body.name;
+	const lastname = req.body.lastname;
+	const email = req.body.email;
+	const contact = req.body.contact;
+	const description = req.body.description;
 
+	try {
+		const user = await User.findById(id);
+		if (!user) {
+			return next(new ErrorResponse('Korisnik nije pronađen', 404));
+		}
+		user.name = name;
+		user.lastname = lastname;
+		user.email = email;
+		user.contact = contact;
+		user.description = description;
+
+		await user.save();
+		user.password = undefined;
+		res.status(200).json(user);
+	} catch (error) {
+		next(error);
+	}
+};
 const uploadUserPhoto = async (req, res, next) => {
 	const user = await User.findById(req.params.id);
 
@@ -212,9 +243,8 @@ const uploadUserPhoto = async (req, res, next) => {
 			data: file.name,
 		});
 	});
-
-	console.log(file.name);
 };
+
 const getUserPhoto = async (req, res, next) => {
 	const id = req.params.id;
 	try {
@@ -236,4 +266,5 @@ module.exports = {
 	resetPassword,
 	uploadUserPhoto,
 	getUserPhoto,
+	editUser,
 };

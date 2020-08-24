@@ -25,7 +25,7 @@ const rideSchema = new Schema(
 			required: true,
 		},
 		price: {
-			type: Number,
+			type: String,
 			default: undefined,
 		},
 		smoking: {
@@ -44,6 +44,7 @@ const rideSchema = new Schema(
 		users: [
 			{
 				type: Object,
+				default: undefined,
 			},
 		],
 	},
