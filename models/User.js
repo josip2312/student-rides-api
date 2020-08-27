@@ -44,6 +44,12 @@ const userSchema = new Schema({
 			ref: 'Ride',
 		},
 	],
+	messages: [
+		{
+			type: Object,
+			default: undefined,
+		},
+	],
 	//need unique id
 	notifications: [{ type: Object }],
 	resetPasswordToken: String,

@@ -41,6 +41,14 @@ const rideSchema = new Schema(
 			ref: 'User',
 			required: true,
 		},
+		fullName: {
+			type: String,
+			default: undefined,
+		},
+		userPhoto: {
+			type: String,
+			default: undefined,
+		},
 		users: [
 			{
 				type: Object,

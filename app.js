@@ -13,7 +13,9 @@ const authRoutes = require('./routes/auth');
 dotenv.config();
 
 const app = express();
+const http = require('http').createServer(app);
 
+const io = require('socket.io')(http);
 //middlewares
 
 app.use(cors());
@@ -43,6 +45,74 @@ mongoose.connect(
 	},
 );
 
-app.listen(3000);
+http.listen(process.env.PORT);
 
-//lesson 23
+//chatting functionality
+const ErrorResponse = require('./utils/errorResponse');
+const User = require('./models/User');
+
+/* const users = {};
+async function getUsers() {
+	let foundUsers = await User.find();
+	foundUsers.forEach((user) => {
+		users[user._id] = null;
+	});
+}
+getUsers(); */
+
+const users = [];
+io.on('connection', (socket) => {
+	socket.on('connected', (id) => {
+		users[id] = socket.id;
+	});
+	socket.on('message', async (data) => {
+		const socketId = users[data.receiver];
+		io.to(socketId).emit('message', {
+			sender: data.sender,
+			receiver: data.receiver,
+			senderName: data.senderName,
+			receiverName: data.receiverName,
+			message: data.message,
+		});
+
+		const receiver = await User.findById(data.receiver);
+		const sender = await User.findById(data.sender);
+
+		if (!receiver || !sender) {
+			return new ErrorResponse('Korisnik ne postoji', 404);
+		}
+
+		receiver.messages.push({
+			sender: data.sender,
+			receiver: data.receiver,
+			senderName: data.senderName,
+			receiverName: data.receiverName,
+			message: data.message,
+		});
+		sender.messages.push({
+			sender: data.sender,
+			receiver: data.receiver,
+			senderName: data.senderName,
+			receiverName: data.receiverName,
+			message: data.message,
+		});
+
+		receiver.save();
+		sender.save();
+		//return Promise.all(userReceiving, userSending);
+	});
+	socket.on('disconnect', () => {
+		Object.entries(users).forEach((pair) => {
+			if (socket.id === pair[1]) {
+				delete users[pair[0]];
+			}
+		});
+	});
+
+	socket.on('typing', (data) => {
+		io.to(users[data]).emit('typing');
+	});
+	socket.on('stopTyping', (data) => {
+		io.to(users[data]).emit('stopTyping');
+	});
+});
