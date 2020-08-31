@@ -1,4 +1,8 @@
 const crypto = require('crypto');
+
+const dotenv = require('dotenv');
+dotenv.config();
+
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
@@ -22,7 +26,7 @@ const userSchema = new Schema({
 	},
 	photo: {
 		type: String,
-		default: undefined,
+		default: `${process.env.BASE_URL}/uploads/user.svg`,
 	},
 	contact: {
 		type: String,
@@ -44,10 +48,10 @@ const userSchema = new Schema({
 			ref: 'Ride',
 		},
 	],
-	messages: [
+	chats: [
 		{
-			type: Object,
-			default: undefined,
+			type: Schema.Types.ObjectId,
+			ref: 'Chat',
 		},
 	],
 	//need unique id

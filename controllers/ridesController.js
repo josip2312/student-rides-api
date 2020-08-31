@@ -130,17 +130,12 @@ const deleteRide = async (req, res, next) => {
 
 		userToUpdate.rides.pull(id);
 
-		/* for (let i = 0; i < foundRide.users.length; i++) {
-			console.log(
-				foundRide.users[i].reservedRides[i]._id === foundRide._id,
-			);
-		} */
-
 		await userToUpdate.save();
 		res.status(200).json({
 			message: 'Voznja uklonjena',
 			ride: removedRide,
 		});
+		return Promise.all([removedRide, userToUpdate]);
 	} catch (error) {
 		next(error);
 	}
@@ -222,10 +217,9 @@ const reserveRide = async (req, res, next) => {
 			});
 		}
 
+		userToAdd.password = ' ';
 		foundRide.users.push(userToAdd);
 
-		//userToAdd.save didnt work
-		//kentra oko rezervirani voznji kad se izbrise voznja
 		User.findOneAndUpdate(
 			{
 				_id: userToAdd._id,

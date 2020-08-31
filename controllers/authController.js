@@ -237,10 +237,13 @@ const uploadUserPhoto = async (req, res, next) => {
 			console.error(err);
 			return next(new ErrorResponse(`Problem with file upload`, 500));
 		}
-		await User.findByIdAndUpdate(req.params.id, { photo: file.name });
+		let photoPath = `${process.env.BASE_URL}/uploads/${file.name}`;
+		await User.findByIdAndUpdate(req.params.id, {
+			photo: photoPath,
+		});
 		res.status(200).json({
 			success: true,
-			data: file.name,
+			data: photoPath,
 		});
 	});
 };

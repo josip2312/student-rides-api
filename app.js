@@ -9,6 +9,7 @@ const fileupload = require('express-fileupload');
 const errorHandler = require('./middleware/error');
 const ridesRoutes = require('./routes/rides');
 const authRoutes = require('./routes/auth');
+const chatRoutes = require('./routes/chat');
 
 dotenv.config();
 
@@ -29,6 +30,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/rides', ridesRoutes);
 app.use('/auth', authRoutes);
+app.use('/', chatRoutes);
 
 app.use(errorHandler);
 
@@ -44,75 +46,28 @@ mongoose.connect(
 		console.log(err);
 	},
 );
+const port = process.env.PORT || 3000;
 
-http.listen(process.env.PORT);
+http.listen(port);
 
-//chatting functionality
-const ErrorResponse = require('./utils/errorResponse');
-const User = require('./models/User');
+//chatting functionality with socket.io
 
-/* const users = {};
-async function getUsers() {
-	let foundUsers = await User.find();
-	foundUsers.forEach((user) => {
-		users[user._id] = null;
-	});
-}
-getUsers(); */
+const Chat = require('./models/Chat');
 
-const users = [];
+const rooms = [];
 io.on('connection', (socket) => {
-	socket.on('connected', (id) => {
-		users[id] = socket.id;
+	socket.on('connected', async (data) => {
+		rooms[data.room] = data.room;
+		socket.join(data.room);
 	});
 	socket.on('message', async (data) => {
-		const socketId = users[data.receiver];
-		io.to(socketId).emit('message', {
-			sender: data.sender,
-			receiver: data.receiver,
-			senderName: data.senderName,
-			receiverName: data.receiverName,
-			message: data.message,
-		});
+		socket.to(data.room).emit('message', data.message);
 
-		const receiver = await User.findById(data.receiver);
-		const sender = await User.findById(data.sender);
+		//chat id
+		const chat = await Chat.findById(data.room);
 
-		if (!receiver || !sender) {
-			return new ErrorResponse('Korisnik ne postoji', 404);
-		}
+		chat.messages.push(data.message);
 
-		receiver.messages.push({
-			sender: data.sender,
-			receiver: data.receiver,
-			senderName: data.senderName,
-			receiverName: data.receiverName,
-			message: data.message,
-		});
-		sender.messages.push({
-			sender: data.sender,
-			receiver: data.receiver,
-			senderName: data.senderName,
-			receiverName: data.receiverName,
-			message: data.message,
-		});
-
-		receiver.save();
-		sender.save();
-		//return Promise.all(userReceiving, userSending);
-	});
-	socket.on('disconnect', () => {
-		Object.entries(users).forEach((pair) => {
-			if (socket.id === pair[1]) {
-				delete users[pair[0]];
-			}
-		});
-	});
-
-	socket.on('typing', (data) => {
-		io.to(users[data]).emit('typing');
-	});
-	socket.on('stopTyping', (data) => {
-		io.to(users[data]).emit('stopTyping');
+		await chat.save();
 	});
 });
