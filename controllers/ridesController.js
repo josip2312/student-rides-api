@@ -217,7 +217,7 @@ const reserveRide = async (req, res, next) => {
 			});
 		}
 
-		userToAdd.password = ' ';
+		userToAdd.password = undefined;
 		foundRide.users.push(userToAdd);
 
 		User.findOneAndUpdate(

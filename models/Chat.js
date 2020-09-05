@@ -3,6 +3,14 @@ const mongoose = require('mongoose');
 const { type } = require('os');
 const Schema = mongoose.Schema;
 
+const messageSchema = new Schema({
+	from: String,
+	content: String,
+	receiverHasRead: Boolean,
+	sender: String,
+	receiver: String,
+});
+
 const chatSchema = new Schema({
 	sender: {
 		type: String,
@@ -17,7 +25,7 @@ const chatSchema = new Schema({
 	],
 	messages: [
 		{
-			type: Object,
+			type: messageSchema,
 		},
 	],
 });

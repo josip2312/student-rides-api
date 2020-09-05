@@ -32,7 +32,10 @@ const createNewChat = async (req, res, next) => {
 		if (chats.length > 0) {
 			for (let i = 0; i < chats.length; i++) {
 				let chat = await Chat.findById(chats[i]);
-				if (chat.receiver === receiver && chat.sender === sender) {
+				if (
+					(chat.receiver === receiver && chat.sender === sender) ||
+					(chat.receiver === sender && chat.sender === receiver)
+				) {
 					exists = true;
 					break;
 				}
@@ -42,10 +45,11 @@ const createNewChat = async (req, res, next) => {
 		if (!exists) {
 			const senderUser = await User.findById(sender);
 			const receiverUser = await User.findById(receiver);
+			const tempPassword1 = senderUser.password;
+			const tempPassword2 = receiverUser.password;
 
-			senderUser.password = ' ';
-			receiverUser.password = ' ';
-
+			senderUser.password = undefined;
+			receiverUser.password = undefined;
 			const chat = new Chat({
 				sender,
 				receiver,
@@ -54,6 +58,9 @@ const createNewChat = async (req, res, next) => {
 			});
 
 			const c1 = await chat.save();
+
+			senderUser.password = tempPassword1;
+			receiverUser.password = tempPassword2;
 
 			senderUser.chats.push(chat);
 			receiverUser.chats.push(chat);

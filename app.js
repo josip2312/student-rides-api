@@ -55,19 +55,44 @@ http.listen(port);
 const Chat = require('./models/Chat');
 
 const rooms = [];
+const users = [];
 io.on('connection', (socket) => {
 	socket.on('connected', async (data) => {
 		rooms[data.room] = data.room;
 		socket.join(data.room);
 	});
+	socket.on('connectedGlobal', (data) => {
+		users[data.id] = socket.id;
+	});
 	socket.on('message', async (data) => {
 		socket.to(data.room).emit('message', data.message);
 
-		//chat id
+		socket
+			.to(users[data.message.receiver])
+			.emit('notification', `Nova poruka od ${data.message.from}`);
+
+		const chat = await Chat.findById(data.room);
+		chat.messages.push(data.message);
+		await chat.save();
+	});
+	socket.on('readMessages', async (data) => {
 		const chat = await Chat.findById(data.room);
 
-		chat.messages.push(data.message);
+		if (chat.messages.length > 0) {
+			if (
+				chat.messages[chat.messages.length - 1].sender !== data.sender
+			) {
+				chat.messages[chat.messages.length - 1].receiverHasRead = true;
 
-		await chat.save();
+				await chat.save(function (err) {
+					if (err) {
+						console.log(err);
+					}
+				});
+			}
+		}
+	});
+	socket.on('clearNotifications', (data) => {
+		io.to(users[data.sender]).emit('clearNotification');
 	});
 });
