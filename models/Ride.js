@@ -55,7 +55,13 @@ const rideSchema = new Schema(
 				default: undefined,
 			},
 		],
+		expireAt: {
+			type: Date,
+			default: this.createdAt,
+			index: { expires: '1m' },
+		},
 	},
+
 	{ timestamps: true },
 );
 

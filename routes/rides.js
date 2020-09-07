@@ -7,17 +7,17 @@ const Ride = require('../models/Ride');
 
 const router = express.Router();
 
-router.get('/', ridesController.getAllRides);
+router.get('/', isAuth, ridesController.getAllRides);
 
-router.get('/user/:id', ridesController.getUserRides);
+router.get('/user/:id', isAuth, ridesController.getUserRides);
 
 router.get('/user/reserved/:id', ridesController.getReservedRides);
 
 router.post('/', isAuth, ridesController.postRide);
 
-router.get('/:id', ridesController.getSingleRide);
+router.get('/:id', isAuth, ridesController.getSingleRide);
 
-router.post('/ride/:id', ridesController.reserveRide);
+router.post('/ride/:id', isAuth, ridesController.reserveRide);
 
 router.patch('/ride/:id', isAuth, ridesController.updateRide);
 
