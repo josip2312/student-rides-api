@@ -116,8 +116,6 @@ const deleteRide = async (req, res, next) => {
 			return next(new ErrorResponse('Niste autorizirani', 403));
 		}
 
-		//kad se izbrise voznja updateat reserved rides
-
 		for (let i = 0; i < foundRide.users.length; i++) {
 			let user = await User.findById(foundRide.users[i]._id);
 

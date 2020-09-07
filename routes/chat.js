@@ -1,13 +1,15 @@
 const express = require('express');
 
+const isAuth = require('../middleware/isAuth');
+
 const chatController = require('../controllers/chatController');
 
 const Ride = require('../models/Ride');
 
 const router = express.Router();
 
-router.get('/chat/:id', chatController.getChats);
+router.get('/chat/:id', isAuth, chatController.getChats);
 
-router.post('/chat/create', chatController.createNewChat);
+router.post('/chat/create', isAuth, chatController.createNewChat);
 
 module.exports = router;
