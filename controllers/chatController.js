@@ -75,7 +75,34 @@ const createNewChat = async (req, res, next) => {
 		next(error);
 	}
 };
+const deleteChat = async (req, res, next) => {
+	const id = req.params.id;
+	try {
+		const foundChat = await Chat.findById(id);
+		if (!foundChat) {
+			return next(new ErrorResponse('Razgovor nije pronađen', 404));
+		}
+		//nadji chat i korisnike i ukloni chat i idove sto vezu
+		console.log(foundChat);
+
+		const user1 = await User.findById(foundChat.members[0]._id);
+		const user2 = await User.findById(foundChat.members[1]._id);
+
+		user1.chats.pull(foundChat._id);
+		user2.chats.pull(foundChat._id);
+
+		const removedChat = await Chat.deleteOne({ _id: id });
+		const user1Save = await user1.save();
+		const user2Save = await user2.save();
+
+		res.status(200).json({ message: 'Chat removed' });
+		return Promise.all([removedChat, user1Save, user2Save]);
+	} catch (error) {
+		next(error);
+	}
+};
 module.exports = {
 	getChats,
 	createNewChat,
+	deleteChat,
 };
