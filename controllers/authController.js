@@ -71,7 +71,7 @@ const login = async (req, res, next) => {
 
 		const comparison = await bcrypt.compare(password, foundUser.password);
 		if (!comparison) {
-			return next(new ErrorResponse('Neispravna lozinka', 401));
+			return next(new ErrorResponse('Neispravni podaci za prijavu', 401));
 		}
 		const token = jwt.sign(
 			{

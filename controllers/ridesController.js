@@ -9,6 +9,7 @@ const getAllRides = async (req, res, next) => {
 		if (!rides) {
 			return next(new ErrorResponse('Nema voznji', 404));
 		}
+
 		res.status(200).json(rides);
 	} catch (error) {
 		next(error);
@@ -38,6 +39,9 @@ const getUserRides = async (req, res, next) => {
 		let rides = [];
 		for (let i = 0; i < foundUser.rides.length; i++) {
 			let ride = await Ride.findById(foundUser.rides[i]);
+			if (!ride) {
+				return next(new ErrorResponse('Nema voznji'));
+			}
 			rides.push(ride);
 		}
 
@@ -69,6 +73,7 @@ const postRide = async (req, res, next) => {
 	const start = req.body.start;
 	const end = req.body.end;
 	const date = req.body.date;
+	const startTime = req.body.startTime;
 	const contact = req.body.contact;
 	const seats = req.body.seats;
 	const price = req.body.price;
@@ -76,10 +81,13 @@ const postRide = async (req, res, next) => {
 	const smoking = req.body.smoking;
 	const car = req.body.car;
 
+	console.log(req.body);
+
 	const ride = new Ride({
 		start,
 		end,
 		date,
+		startTime,
 		contact,
 		seats,
 		price,
@@ -95,10 +103,11 @@ const postRide = async (req, res, next) => {
 		const savedRide = await ride.save();
 		foundUser.rides.push(ride);
 		const savedUser = await foundUser.save();
+
 		res.status(201).json({
 			message: 'Voznja stvorena',
 			ride: savedRide,
-			foundUser: { _id: foundUser._id, username: foundUser.username },
+			foundUser: { _id: foundUser._id },
 		});
 	} catch (error) {
 		next(error);
