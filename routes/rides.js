@@ -23,6 +23,8 @@ router.patch('/ride/:id', isAuth, ridesController.updateRide);
 
 router.delete('/ride/:id', isAuth, ridesController.deleteRide);
 
+router.delete('/expired', ridesController.deleteExpiredRides);
+
 router.put('/notifications', isAuth, ridesController.readNotification);
 
 router.delete(
