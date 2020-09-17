@@ -139,7 +139,7 @@ const resetPassword = async (req, res, next) => {
 	});
 
 	if (!user) {
-		return next(new ErrorResponse('Invalid token', 400));
+		return next(new ErrorResponse('Nije dopušteno', 400));
 	}
 	const password = req.body.password;
 	const salt = await bcrypt.genSalt();

@@ -81,8 +81,6 @@ const postRide = async (req, res, next) => {
 	const smoking = req.body.smoking;
 	const car = req.body.car;
 
-	console.log(req.body);
-
 	const ride = new Ride({
 		start,
 		end,
@@ -290,7 +288,23 @@ const deleteAllNotifications = async (req, res, next) => {
 		next(error);
 	}
 };
+const deleteExpiredRides = async (req, res, next) => {
+	const rides = await Ride.find();
 
+	for (let i = 0; i < rides.length; i++) {
+		const deletedRides = [];
+		if (rides[i].date.getTime() < Date.now()) {
+			const deletedRide = await Ride.deleteOne({ _id: rides[i]._id });
+			if (deletedRide) {
+				const user = await User.findById(rides[i].user);
+				deletedRides.push(deletedRide);
+				user.rides.pull(rides[i]._id);
+				await user.save();
+			}
+		}
+		res.json(deletedRides);
+	}
+};
 module.exports = {
 	getAllRides,
 	getUserRides,
@@ -302,4 +316,5 @@ module.exports = {
 	reserveRide,
 	readNotification,
 	deleteAllNotifications,
+	deleteExpiredRides,
 };

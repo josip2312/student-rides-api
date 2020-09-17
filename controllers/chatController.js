@@ -34,7 +34,8 @@ const createNewChat = async (req, res, next) => {
 				let chat = await Chat.findById(chats[i]);
 				if (
 					(chat.receiver === receiver && chat.sender === sender) ||
-					(chat.receiver === sender && chat.sender === receiver)
+					(chat.receiver === sender && chat.sender === receiver) ||
+					receiver === sender
 				) {
 					exists = true;
 					break;
@@ -67,6 +68,9 @@ const createNewChat = async (req, res, next) => {
 
 			const recPromise = await receiverUser.save();
 			const sendPromise = await senderUser.save();
+			if (!recPromise || !sendPromise) {
+				next(new ErrorResponse('Korisnik nije pronađen', 404));
+			}
 			res.status(200).json({ data: 'New chat created' });
 			return Promise.all([recPromise, sendPromise]);
 		}
@@ -83,7 +87,6 @@ const deleteChat = async (req, res, next) => {
 			return next(new ErrorResponse('Razgovor nije pronađen', 404));
 		}
 		//nadji chat i korisnike i ukloni chat i idove sto vezu
-		console.log(foundChat);
 
 		const user1 = await User.findById(foundChat.members[0]._id);
 		const user2 = await User.findById(foundChat.members[1]._id);
