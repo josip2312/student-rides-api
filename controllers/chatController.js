@@ -22,24 +22,28 @@ const getChats = async (req, res, next) => {
 };
 
 const createNewChat = async (req, res, next) => {
+	console.log(req.body);
 	const sender = req.body.sender;
 	const senderName = req.body.senderName;
 	const receiver = req.body.receiver;
 	const receiverName = req.body.receiverName;
 	const chats = req.body.chats;
+
+	/* if (!chats) {
+		return next(new ErrorResponse('Korisnik nije pronađen', 404));
+	} */
 	try {
 		let exists = false;
-		if (chats.length > 0) {
-			for (let i = 0; i < chats.length; i++) {
-				let chat = await Chat.findById(chats[i]);
-				if (
-					(chat.receiver === receiver && chat.sender === sender) ||
-					(chat.receiver === sender && chat.sender === receiver) ||
-					receiver === sender
-				) {
-					exists = true;
-					break;
-				}
+
+		for (let i = 0; i < chats.length; i++) {
+			let chat = await Chat.findById(chats[i]);
+			if (
+				(chat.receiver === receiver && chat.sender === sender) ||
+				(chat.receiver === sender && chat.sender === receiver) ||
+				receiver === sender
+			) {
+				exists = true;
+				break;
 			}
 		}
 
@@ -69,7 +73,7 @@ const createNewChat = async (req, res, next) => {
 			const recPromise = await receiverUser.save();
 			const sendPromise = await senderUser.save();
 			if (!recPromise || !sendPromise) {
-				next(new ErrorResponse('Korisnik nije pronađen', 404));
+				return next(new ErrorResponse('Korisnik nije pronađen', 404));
 			}
 			res.status(200).json({ data: 'New chat created' });
 			return Promise.all([recPromise, sendPromise]);
@@ -90,6 +94,19 @@ const deleteChat = async (req, res, next) => {
 
 		const user1 = await User.findById(foundChat.members[0]._id);
 		const user2 = await User.findById(foundChat.members[1]._id);
+
+		if (!user1) {
+			const removedChat = await Chat.deleteOne({ _id: id });
+			user2.chats.pull(foundChat._id);
+			const user2Save = await user2.save();
+			return next(new ErrorResponse('Korisnik ne postoji', 404));
+		}
+		if (!user2) {
+			const removedChat = await Chat.deleteOne({ _id: id });
+			user1.chats.pull(foundChat._id);
+			const user2Save = await user1.save();
+			return next(new ErrorResponse('Korisnik ne postoji', 404));
+		}
 
 		user1.chats.pull(foundChat._id);
 		user2.chats.pull(foundChat._id);

@@ -19,7 +19,9 @@ router.get('/:id', isAuth, ridesController.getSingleRide);
 
 router.post('/ride/:id', isAuth, ridesController.reserveRide);
 
-router.patch('/ride/:id', isAuth, ridesController.updateRide);
+router.patch('/ride/:id', isAuth, ridesController.editRide);
+
+router.patch('/ride/update/:id', isAuth, ridesController.removeUserFromRide);
 
 router.delete('/ride/:id', isAuth, ridesController.deleteRide);
 
