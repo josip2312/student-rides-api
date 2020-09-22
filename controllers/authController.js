@@ -61,12 +61,7 @@ const login = async (req, res, next) => {
 	try {
 		const foundUser = await User.findOne({ email: email });
 		if (!foundUser) {
-			return next(
-				new ErrorResponse(
-					'Korisnik s tom email adresom nije pronađen',
-					401,
-				),
-			);
+			return next(new ErrorResponse('Neispravni podaci za prijavu', 401));
 		}
 
 		const comparison = await bcrypt.compare(password, foundUser.password);

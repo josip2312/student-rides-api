@@ -1,3 +1,4 @@
+const { update } = require('../models/Ride');
 const Ride = require('../models/Ride');
 const User = require('../models/User');
 const ErrorResponse = require('../utils/errorResponse');
@@ -145,7 +146,7 @@ const deleteRide = async (req, res, next) => {
 		next(error);
 	}
 };
-const updateRide = async (req, res, next) => {
+const editRide = async (req, res, next) => {
 	const id = req.params.id;
 	const start = req.body.start;
 	const end = req.body.end;
@@ -177,6 +178,29 @@ const updateRide = async (req, res, next) => {
 		error.statusCode = 403;
 		next(error);
 	}
+};
+const removeUserFromRide = async (req, res, next) => {
+	const rideId = req.params.id;
+	const userId = req.body.userId;
+
+	const foundRide = await Ride.findById(rideId);
+	const foundUser = await User.findById(userId);
+	console.log('Found user', foundUser);
+	foundRide.users = foundRide.users.filter((user) => {
+		return user._id === userId;
+	});
+	foundRide.seats++;
+	foundUser.notifications.push({
+		message: `Uklonjeni ste s vožnje koju ste rezervirali`,
+		_id: new ObjectID(),
+		rideId,
+	});
+	foundUser.reservedRides.pull(foundRide._id);
+	const userPromise = await foundUser.save();
+	const ridePromise = await foundRide.save();
+
+	res.status(200).json({ message: 'Korisnik uklonjen iz voznje' });
+	return Promise.all([userPromise, ridePromise]);
 };
 
 const reserveRide = async (req, res, next) => {
@@ -291,8 +315,8 @@ const deleteAllNotifications = async (req, res, next) => {
 const deleteExpiredRides = async (req, res, next) => {
 	const rides = await Ride.find();
 
+	const deletedRides = [];
 	for (let i = 0; i < rides.length; i++) {
-		const deletedRides = [];
 		if (rides[i].date.getTime() < Date.now()) {
 			const deletedRide = await Ride.deleteOne({ _id: rides[i]._id });
 			if (deletedRide) {
@@ -302,8 +326,8 @@ const deleteExpiredRides = async (req, res, next) => {
 				await user.save();
 			}
 		}
-		res.json(deletedRides);
 	}
+	res.status(200).json(deletedRides);
 };
 module.exports = {
 	getAllRides,
@@ -312,7 +336,8 @@ module.exports = {
 	postRide,
 	getSingleRide,
 	deleteRide,
-	updateRide,
+	editRide,
+	removeUserFromRide,
 	reserveRide,
 	readNotification,
 	deleteAllNotifications,
