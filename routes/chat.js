@@ -1,9 +1,6 @@
 const express = require('express');
-
 const isAuth = require('../middleware/isAuth');
-
 const chatController = require('../controllers/chatController');
-
 const Ride = require('../models/Ride');
 
 const router = express.Router();

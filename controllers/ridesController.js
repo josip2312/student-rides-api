@@ -1,4 +1,3 @@
-const { update } = require('../models/Ride');
 const Ride = require('../models/Ride');
 const User = require('../models/User');
 const ErrorResponse = require('../utils/errorResponse');
@@ -8,7 +7,7 @@ const getAllRides = async (req, res, next) => {
 	try {
 		const rides = await Ride.find();
 		if (!rides) {
-			return next(new ErrorResponse('Nema voznji', 404));
+			return next(new ErrorResponse('Nema vožnji', 404));
 		}
 
 		res.status(200).json(rides);
@@ -22,7 +21,7 @@ const getSingleRide = async (req, res, next) => {
 	try {
 		const ride = await Ride.findById(id);
 		if (!ride) {
-			return next(new ErrorResponse('Voznja nije pronađena', 404));
+			return next(new ErrorResponse('Vožnja nije pronađena', 404));
 		}
 		res.status(200).json(ride);
 	} catch (error) {
@@ -41,7 +40,7 @@ const getUserRides = async (req, res, next) => {
 		for (let i = 0; i < foundUser.rides.length; i++) {
 			let ride = await Ride.findById(foundUser.rides[i]);
 			if (!ride) {
-				return next(new ErrorResponse('Nema voznji'));
+				return next(new ErrorResponse('Nema vožnji'));
 			}
 			rides.push(ride);
 		}
@@ -82,6 +81,8 @@ const postRide = async (req, res, next) => {
 	const smoking = req.body.smoking;
 	const car = req.body.car;
 
+	const foundUser = await User.findById(userId);
+
 	const ride = new Ride({
 		start,
 		end,
@@ -93,14 +94,17 @@ const postRide = async (req, res, next) => {
 		user: userId,
 		smoking,
 		car,
+		fullName: `${foundUser.name} ${foundUser.lastname}`,
+		userPhoto: foundUser.photo,
 	});
 
 	try {
-		const foundUser = await User.findById(userId);
+		/* const foundUser = await User.findById(userId);
 		ride.fullName = `${foundUser.name} ${foundUser.lastname}`;
-		ride.userPhoto = foundUser.photo;
-		const savedRide = await ride.save();
+		ride.userPhoto = foundUser.photo; */
 		foundUser.rides.push(ride);
+
+		const savedRide = await ride.save();
 		const savedUser = await foundUser.save();
 
 		res.status(201).json({
@@ -108,6 +112,7 @@ const postRide = async (req, res, next) => {
 			ride: savedRide,
 			foundUser: { _id: foundUser._id },
 		});
+		return Promise.all([savedRide, savedUser]);
 	} catch (error) {
 		next(error);
 	}
@@ -137,6 +142,7 @@ const deleteRide = async (req, res, next) => {
 		userToUpdate.rides.pull(id);
 
 		await userToUpdate.save();
+
 		res.status(200).json({
 			message: 'Voznja uklonjena',
 			ride: removedRide,
@@ -173,7 +179,7 @@ const editRide = async (req, res, next) => {
 		foundRide.car = car;
 
 		const savedRide = await foundRide.save();
-		res.status(200).json({ message: 'Voznja azurirana', ride: savedRide });
+		res.status(200).json({ message: 'Vožnja ažurirana', ride: savedRide });
 	} catch (error) {
 		error.statusCode = 403;
 		next(error);
@@ -184,22 +190,26 @@ const removeUserFromRide = async (req, res, next) => {
 	const userId = req.body.userId;
 
 	const foundRide = await Ride.findById(rideId);
-	const foundUser = await User.findById(userId);
-	console.log('Found user', foundUser);
+
 	foundRide.users = foundRide.users.filter((user) => {
 		return user._id === userId;
 	});
+
 	foundRide.seats++;
+
+	const foundUser = await User.findById(userId);
+
 	foundUser.notifications.push({
 		message: `Uklonjeni ste s vožnje koju ste rezervirali`,
 		_id: new ObjectID(),
 		rideId,
 	});
+
 	foundUser.reservedRides.pull(foundRide._id);
 	const userPromise = await foundUser.save();
 	const ridePromise = await foundRide.save();
 
-	res.status(200).json({ message: 'Korisnik uklonjen iz voznje' });
+	res.status(200).json({ message: 'Korisnik uklonjen iz vožnje' });
 	return Promise.all([userPromise, ridePromise]);
 };
 
@@ -211,15 +221,15 @@ const reserveRide = async (req, res, next) => {
 		const foundRide = await Ride.findById(rideId);
 
 		if (!foundRide) {
-			return next(new ErrorResponse('Voznja nije pronađena', 404));
+			return next(new ErrorResponse('Vožnja nije pronađena', 404));
 		}
 		if (foundRide.seats === 0) {
-			return next(new ErrorResponse('Voznja popunjena', 403));
+			return next(new ErrorResponse('Vožnja popunjena', 403));
 		}
 
 		for (let i = 0; i < foundRide.users.length; i++) {
 			if (foundRide.users[i]._id.toString() === userId.toString()) {
-				return next(new ErrorResponse('Voznja vec rezervirana', 403));
+				return next(new ErrorResponse('Vožnja vec rezervirana', 403));
 			}
 		}
 		const userToNotify = await User.findById(foundRide.user);
@@ -228,19 +238,14 @@ const reserveRide = async (req, res, next) => {
 		if (foundRide.seats === 1) {
 			foundRide.seats -= 1;
 			userToNotify.notifications.push({
-				message: `Korisnik ${userToAdd.name} ${userToAdd.lastname} je rezervirao vasu voznju`,
-				_id: new ObjectID(),
-				rideId,
-			});
-			userToNotify.notifications.push({
-				message: `Vasa voznja je popunjena!`,
+				message: `Korisnik ${userToAdd.name} ${userToAdd.lastname} je rezervirao vasu vožnju, vožnja je popunjena`,
 				_id: new ObjectID(),
 				rideId,
 			});
 		} else {
 			foundRide.seats -= 1;
 			userToNotify.notifications.push({
-				message: `Korisnik ${userToAdd.name} ${userToAdd.lastname} je rezervirao vasu voznju`,
+				message: `Korisnik ${userToAdd.name} ${userToAdd.lastname} je rezervirao vasu vožnju`,
 				_id: new ObjectID(),
 				rideId,
 			});
@@ -266,9 +271,8 @@ const reserveRide = async (req, res, next) => {
 		const userPromise = await userToNotify.save();
 		const ridePromise = await foundRide.save();
 
-		res.status(200).json({ message: 'Voznja rezervirana' });
+		res.status(200).json({ message: 'Vožnja rezervirana' });
 
-		//resolve both promises at the same time, not dependent on each other
 		return Promise.all([userPromise, ridePromise]);
 	} catch (error) {
 		next(error);
@@ -307,7 +311,7 @@ const deleteAllNotifications = async (req, res, next) => {
 	try {
 		foundUser.notifications = undefined;
 		await foundUser.save();
-		res.status(200).json({ data: 'Notifications deleted' });
+		res.status(200).json({ message: 'Obavijesti uklonjene' });
 	} catch (error) {
 		next(error);
 	}
