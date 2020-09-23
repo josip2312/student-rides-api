@@ -22,16 +22,13 @@ const getChats = async (req, res, next) => {
 };
 
 const createNewChat = async (req, res, next) => {
-	console.log(req.body);
 	const sender = req.body.sender;
-	const senderName = req.body.senderName;
 	const receiver = req.body.receiver;
-	const receiverName = req.body.receiverName;
 	const chats = req.body.chats;
 
-	/* if (!chats) {
+	if (!chats) {
 		return next(new ErrorResponse('Korisnik nije pronađen', 404));
-	} */
+	}
 	try {
 		let exists = false;
 
@@ -55,6 +52,7 @@ const createNewChat = async (req, res, next) => {
 
 			senderUser.password = undefined;
 			receiverUser.password = undefined;
+
 			const chat = new Chat({
 				sender,
 				receiver,
@@ -62,21 +60,20 @@ const createNewChat = async (req, res, next) => {
 				messages: [],
 			});
 
-			const c1 = await chat.save();
-
 			senderUser.password = tempPassword1;
 			receiverUser.password = tempPassword2;
 
 			senderUser.chats.push(chat);
 			receiverUser.chats.push(chat);
 
+			const chatPromise = await chat.save();
 			const recPromise = await receiverUser.save();
 			const sendPromise = await senderUser.save();
 			if (!recPromise || !sendPromise) {
 				return next(new ErrorResponse('Korisnik nije pronađen', 404));
 			}
 			res.status(200).json({ data: 'New chat created' });
-			return Promise.all([recPromise, sendPromise]);
+			return Promise.all([chatPromise, recPromise, sendPromise]);
 		}
 		res.status(409).json({ data: 'chat already exists' });
 	} catch (error) {
@@ -90,7 +87,6 @@ const deleteChat = async (req, res, next) => {
 		if (!foundChat) {
 			return next(new ErrorResponse('Razgovor nije pronađen', 404));
 		}
-		//nadji chat i korisnike i ukloni chat i idove sto vezu
 
 		const user1 = await User.findById(foundChat.members[0]._id);
 		const user2 = await User.findById(foundChat.members[1]._id);
@@ -99,12 +95,15 @@ const deleteChat = async (req, res, next) => {
 			const removedChat = await Chat.deleteOne({ _id: id });
 			user2.chats.pull(foundChat._id);
 			const user2Save = await user2.save();
+			Promise.all([removedChat, user2Save]);
 			return next(new ErrorResponse('Korisnik ne postoji', 404));
 		}
 		if (!user2) {
 			const removedChat = await Chat.deleteOne({ _id: id });
 			user1.chats.pull(foundChat._id);
-			const user2Save = await user1.save();
+			const user1Save = await user1.save();
+			Promise.all([removedChat, user1Save]);
+
 			return next(new ErrorResponse('Korisnik ne postoji', 404));
 		}
 
@@ -115,7 +114,7 @@ const deleteChat = async (req, res, next) => {
 		const user1Save = await user1.save();
 		const user2Save = await user2.save();
 
-		res.status(200).json({ message: 'Chat removed' });
+		res.status(200).json({ message: 'Razgovor uklonjen' });
 		return Promise.all([removedChat, user1Save, user2Save]);
 	} catch (error) {
 		next(error);

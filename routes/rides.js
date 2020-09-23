@@ -13,13 +13,13 @@ router.get('/user/:id', isAuth, ridesController.getUserRides);
 
 router.get('/user/reserved/:id', ridesController.getReservedRides);
 
-router.post('/', isAuth, ridesController.postRide);
-
 router.get('/:id', isAuth, ridesController.getSingleRide);
+
+router.post('/', isAuth, ridesController.postRide);
 
 router.post('/ride/:id', isAuth, ridesController.reserveRide);
 
-router.patch('/ride/:id', isAuth, ridesController.editRide);
+router.put('/ride/:id', isAuth, ridesController.editRide);
 
 router.patch('/ride/update/:id', isAuth, ridesController.removeUserFromRide);
 
@@ -27,7 +27,7 @@ router.delete('/ride/:id', isAuth, ridesController.deleteRide);
 
 router.delete('/expired', ridesController.deleteExpiredRides);
 
-router.put('/notifications', isAuth, ridesController.readNotification);
+router.patch('/notifications', isAuth, ridesController.readNotification);
 
 router.delete(
 	'/notifications/:id',
