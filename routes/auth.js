@@ -50,6 +50,13 @@ router.post(
 );
 router.post('/login', authController.login);
 
+router.get('/user/confirmation/:token', authController.confirmPassword);
+
+router.get(
+	'/user/confirmation/resend/:id',
+	authController.resendConfirmationEmail,
+);
+
 router.post('/forgotpassword', authController.forgotPassword);
 
 router.put('/resetpassword/:resettoken', authController.resetPassword);

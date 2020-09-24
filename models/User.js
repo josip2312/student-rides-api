@@ -56,6 +56,11 @@ const userSchema = new Schema({
 	],
 	//need unique id
 	notifications: [{ type: Object }],
+
+	confirmed: {
+		type: Boolean,
+		default: false,
+	},
 	resetPasswordToken: String,
 	resetPasswordExpire: Date,
 });
