@@ -493,9 +493,7 @@ const register = async (req, res, next) => {
 };
 const resendConfirmationEmail = async (req, res, next) => {
 	try {
-		console.log(req.params.id);
 		const user = await User.findById(req.params.id);
-		console.log(user);
 		const token = jwt.sign(
 			{
 				userId: user._id.toString(),
@@ -952,8 +950,6 @@ const login = async (req, res, next) => {
 	const email = req.body.email;
 	const password = req.body.password;
 
-	console.log(email);
-
 	try {
 		const foundUser = await User.findOne({ email: email });
 		if (!foundUser) {
@@ -1013,7 +1009,6 @@ const confirmPassword = async (req, res, next) => {
 };
 
 const forgotPassword = async (req, res, next) => {
-	console.log(req.body.email);
 	try {
 		const user = await User.findOne({ email: req.body.email });
 		if (!user) {

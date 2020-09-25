@@ -26,6 +26,9 @@ const createNewChat = async (req, res, next) => {
 	const receiver = req.body.receiver;
 	const chats = req.body.chats;
 
+	if (sender === receiver) {
+		return next(new ErrorResponse('Greška', 405));
+	}
 	if (!chats) {
 		return next(new ErrorResponse('Korisnik nije pronađen', 404));
 	}
