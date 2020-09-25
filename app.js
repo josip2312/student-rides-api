@@ -35,7 +35,7 @@ app.use('/', chatRoutes);
 app.use(errorHandler);
 
 mongoose.connect(
-	process.env.DB_URI,
+	process.env.MONGODB_URI,
 	{
 		useNewUrlParser: true,
 		useUnifiedTopology: true,
@@ -55,7 +55,7 @@ http.listen(port);
 const Chat = require('./models/Chat');
 
 const rooms = [];
-const users = [];
+const users = {};
 io.on('connection', (socket) => {
 	socket.on('connected', async (data) => {
 		rooms[data.room] = data.room;

@@ -99,9 +99,6 @@ const postRide = async (req, res, next) => {
 	});
 
 	try {
-		/* const foundUser = await User.findById(userId);
-		ride.fullName = `${foundUser.name} ${foundUser.lastname}`;
-		ride.userPhoto = foundUser.photo; */
 		foundUser.rides.push(ride);
 
 		const savedRide = await ride.save();
