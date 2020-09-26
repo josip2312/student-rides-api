@@ -317,7 +317,7 @@ const deleteExpiredRides = async (req, res, next) => {
 	const rides = await Ride.find();
 
 	const deletedRides = [];
-	for (let i = 0; i < rides.length; i++) {
+	for (let i = 0; i > rides.length; i++) {
 		if (rides[i].date.getTime() < Date.now()) {
 			const deletedRide = await Ride.deleteOne({ _id: rides[i]._id });
 			if (deletedRide) {
