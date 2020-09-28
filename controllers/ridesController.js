@@ -16,59 +16,6 @@ const getAllRides = async (req, res, next) => {
 	}
 };
 
-const getSingleRide = async (req, res, next) => {
-	const id = req.params.id;
-	try {
-		const ride = await Ride.findById(id);
-		if (!ride) {
-			return next(new ErrorResponse('Vožnja nije pronađena', 404));
-		}
-		res.status(200).json(ride);
-	} catch (error) {
-		next(error);
-	}
-};
-
-const getUserRides = async (req, res, next) => {
-	const id = req.params.id;
-	try {
-		const foundUser = await User.findById(id);
-		if (!foundUser) {
-			return next(new ErrorResponse('Korisnik nije pronađen', 404));
-		}
-		let rides = [];
-		for (let i = 0; i < foundUser.rides.length; i++) {
-			let ride = await Ride.findById(foundUser.rides[i]);
-			if (!ride) {
-				return next(new ErrorResponse('Nema vožnji'));
-			}
-			rides.push(ride);
-		}
-
-		res.status(200).json(rides);
-	} catch (error) {
-		next(error);
-	}
-};
-const getReservedRides = async (req, res, next) => {
-	const id = req.params.id;
-	try {
-		const foundUser = await User.findById(id);
-		if (!foundUser) {
-			return next(new ErrorResponse('Korisnik nije pronađen', 404));
-		}
-		let reserved = [];
-		for (let i = 0; i < foundUser.reservedRides.length; i++) {
-			let reservedRide = await Ride.findById(foundUser.reservedRides[i]);
-			reserved.push(reservedRide);
-		}
-
-		res.status(200).json(reserved);
-	} catch (error) {
-		next(error);
-	}
-};
-
 const postRide = async (req, res, next) => {
 	const start = req.body.start;
 	const end = req.body.end;
@@ -332,10 +279,7 @@ const deleteExpiredRides = async (req, res, next) => {
 };
 module.exports = {
 	getAllRides,
-	getUserRides,
-	getReservedRides,
 	postRide,
-	getSingleRide,
 	deleteRide,
 	editRide,
 	removeUserFromRide,

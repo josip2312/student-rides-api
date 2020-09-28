@@ -9,12 +9,6 @@ const router = express.Router();
 
 router.get('/', isAuth, ridesController.getAllRides);
 
-router.get('/user/:id', isAuth, ridesController.getUserRides);
-
-router.get('/user/reserved/:id', ridesController.getReservedRides);
-
-router.get('/:id', isAuth, ridesController.getSingleRide);
-
 router.post('/', isAuth, ridesController.postRide);
 
 router.post('/ride/:id', isAuth, ridesController.reserveRide);
