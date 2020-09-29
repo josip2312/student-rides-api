@@ -984,7 +984,7 @@ const login = async (req, res, next) => {
 	}
 };
 
-const confirmPassword = async (req, res, next) => {
+const confirmAccount = async (req, res, next) => {
 	const token = req.params.token;
 
 	try {
@@ -1590,6 +1590,7 @@ const uploadUserPhoto = async (req, res, next) => {
 		});
 		res.status(200).json({
 			success: true,
+			message: 'Fotografija postavljena',
 			data: photoPath,
 		});
 	});
@@ -1612,7 +1613,7 @@ module.exports = {
 	register,
 	login,
 	getUser,
-	confirmPassword,
+	confirmAccount,
 	resendConfirmationEmail,
 	forgotPassword,
 	resetPassword,

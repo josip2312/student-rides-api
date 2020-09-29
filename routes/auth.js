@@ -50,7 +50,7 @@ router.post(
 );
 router.post('/login', authController.login);
 
-router.get('/user/confirmation/:token', authController.confirmPassword);
+router.get('/user/confirmation/:token', authController.confirmAccount);
 
 router.get(
 	'/user/confirmation/resend/:id',
@@ -59,13 +59,13 @@ router.get(
 
 router.post('/forgotpassword', authController.forgotPassword);
 
-router.put('/resetpassword/:resettoken', authController.resetPassword);
+router.patch('/resetpassword/:resettoken', authController.resetPassword);
 
 router.get('/user/:id', isAuth, authController.getUser);
 
 router.patch('/user/edit/:id', isAuth, authController.editUser);
 
-router.put('/user/:id/photo', isAuth, authController.uploadUserPhoto);
+router.patch('/user/:id/photo', isAuth, authController.uploadUserPhoto);
 
 router.get('/user/:id/photo', isAuth, authController.getUserPhoto);
 
