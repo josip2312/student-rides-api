@@ -53,32 +53,18 @@ http.listen(port);
 //chatting functionality with socket.io
 
 const Chat = require('./models/Chat');
-const User = require('./models/User');
 
 const rooms = [];
 const users = {};
-const onlineUsers = {};
 
 io.on('connection', (socket) => {
 	socket.on('connected', async (data) => {
 		rooms[data.room] = data.room;
 		socket.join(data.room);
-		await User.findOneAndUpdate(data.userId, { online: true });
 	});
 
-	socket.on('disconnect', async () => {
-		let id = onlineUsers[socket.id];
-		if (id) {
-			await User.findOneAndUpdate(id, {
-				online: false,
-			});
-		}
-	});
 	socket.on('connectedGlobal', async (data) => {
 		users[data.id] = socket.id;
-		onlineUsers[socket.id] = data.id;
-
-		await User.findOneAndUpdate(data.id, { online: true });
 	});
 
 	socket.on('message', async (data) => {

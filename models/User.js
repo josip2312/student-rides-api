@@ -54,10 +54,7 @@ const userSchema = new Schema({
 			ref: 'Chat',
 		},
 	],
-	online: {
-		type: Boolean,
-		default: false,
-	},
+
 	//need unique id
 	notifications: [{ type: Object }],
 
