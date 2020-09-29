@@ -22,6 +22,7 @@ const getChats = async (req, res, next) => {
 };
 
 const createNewChat = async (req, res, next) => {
+	console.log(req.body);
 	const sender = req.body.sender;
 	const receiver = req.body.receiver;
 	const chats = req.body.chats;
@@ -37,13 +38,15 @@ const createNewChat = async (req, res, next) => {
 
 		for (let i = 0; i < chats.length; i++) {
 			let chat = await Chat.findById(chats[i]);
-			if (
-				(chat.receiver === receiver && chat.sender === sender) ||
-				(chat.receiver === sender && chat.sender === receiver) ||
-				receiver === sender
-			) {
-				exists = true;
-				break;
+			if (chat) {
+				if (
+					(chat.receiver === receiver && chat.sender === sender) ||
+					(chat.receiver === sender && chat.sender === receiver) ||
+					receiver === sender
+				) {
+					exists = true;
+					break;
+				}
 			}
 		}
 
