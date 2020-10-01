@@ -36,6 +36,8 @@ const userSchema = new Schema({
 		type: String,
 		default: undefined,
 	},
+	notifications: [{ type: Object }],
+
 	rides: [
 		{
 			type: Schema.Types.ObjectId,
@@ -54,9 +56,6 @@ const userSchema = new Schema({
 			ref: 'Chat',
 		},
 	],
-
-	//need unique id
-	notifications: [{ type: Object }],
 
 	confirmed: {
 		type: Boolean,

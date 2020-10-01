@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 
 const User = require('../models/User');
-const isAuth = require('../middleware/isAuth');
 const { body } = require('express-validator');
 
 const authController = require('../controllers/authController');
@@ -60,13 +59,5 @@ router.get(
 router.post('/forgotpassword', authController.forgotPassword);
 
 router.patch('/resetpassword/:resettoken', authController.resetPassword);
-
-router.get('/user/:id', isAuth, authController.getUser);
-
-router.patch('/user/edit/:id', isAuth, authController.editUser);
-
-router.patch('/user/:id/photo', isAuth, authController.uploadUserPhoto);
-
-router.get('/user/:id/photo', isAuth, authController.getUserPhoto);
 
 module.exports = router;

@@ -1,5 +1,4 @@
 const { validationResult } = require('express-validator');
-const path = require('path');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
@@ -24,21 +23,19 @@ const register = async (req, res, next) => {
 	if (!errors.isEmpty()) {
 		return next(new ErrorResponse('Email adresa već postoji'));
 	}
-	const name = req.body.name;
-	const lastname = req.body.lastname;
-	const email = req.body.email;
-	const password = req.body.password;
+	const { name, lastname, email, password } = req.body;
 
 	try {
 		const salt = await bcrypt.genSalt();
 		const hashedPassword = await bcrypt.hash(password, salt);
-		const user = new User({
+
+		const user = await User.create({
 			name,
 			lastname,
 			email,
 			password: hashedPassword,
 		});
-		const savedUser = await user.save();
+
 		const token = jwt.sign(
 			{
 				userId: user._id.toString(),
@@ -356,7 +353,7 @@ const register = async (req, res, next) => {
 													"
 												>
 													<a
-														href="${process.env.CLIENT_URL}/auth/confirmpassword/${token}"
+														href="${process.env.CLIENT_URL}/auth/confirmaccount/${token}"
 														target="_blank"
 														style="
 															display: inline-block;
@@ -484,8 +481,9 @@ const register = async (req, res, next) => {
 			`,
 		});
 		res.status(201).json({
+			success: true,
 			message: `Registracija uspjesna`,
-			userId: savedUser._id,
+			userId: user._id,
 		});
 	} catch (err) {
 		next(err);
@@ -811,7 +809,7 @@ const resendConfirmationEmail = async (req, res, next) => {
 													"
 												>
 													<a
-														href="${process.env.CLIENT_URL}/auth/confirmpassword/${token}"
+														href="${process.env.CLIENT_URL}/auth/confirmaccount/${token}"
 														target="_blank"
 														style="
 															display: inline-block;
@@ -938,7 +936,8 @@ const resendConfirmationEmail = async (req, res, next) => {
 
 			`,
 		});
-		res.status(201).json({
+		res.status(200).json({
+			success: true,
 			message: `Email ponovno poslan`,
 			userId: user._id,
 		});
@@ -947,8 +946,7 @@ const resendConfirmationEmail = async (req, res, next) => {
 	}
 };
 const login = async (req, res, next) => {
-	const email = req.body.email;
-	const password = req.body.password;
+	const { email, password } = req.body;
 
 	try {
 		const foundUser = await User.findOne({ email: email });
@@ -975,6 +973,7 @@ const login = async (req, res, next) => {
 			{ expiresIn: '3h' },
 		);
 		res.status(200).json({
+			success: true,
 			token: token,
 			userId: foundUser._id.toString(),
 			message: 'Ulogirani ste',
@@ -1001,6 +1000,7 @@ const confirmAccount = async (req, res, next) => {
 		await foundUser.save();
 
 		res.status(200).json({
+			success: true,
 			message: 'Email potvrđen',
 		});
 	} catch (err) {
@@ -1505,6 +1505,7 @@ const resetPassword = async (req, res, next) => {
 			{ expiresIn: '3h' },
 		);
 		res.status(200).json({
+			success: true,
 			token: token,
 			userId: user._id.toString(),
 			message: 'Ulogirani ste',
@@ -1514,110 +1515,11 @@ const resetPassword = async (req, res, next) => {
 	}
 };
 
-const getUser = async (req, res, next) => {
-	const id = req.params.id;
-	try {
-		const user = await User.findById(id);
-		if (!user) {
-			return next(new ErrorResponse('Korisnik nije pronađen', 404));
-		}
-		user.password = undefined;
-		res.status(200).json(user);
-	} catch (error) {
-		next(error);
-	}
-};
-const editUser = async (req, res, next) => {
-	const id = req.params.id;
-	const name = req.body.name;
-	const lastname = req.body.lastname;
-
-	const contact = req.body.contact;
-	const description = req.body.description;
-
-	try {
-		const user = await User.findById(id);
-		if (!user) {
-			return next(new ErrorResponse('Korisnik nije pronađen', 404));
-		}
-		user.name = name;
-		user.lastname = lastname;
-		user.contact = contact;
-		user.description = description;
-
-		await user.save();
-		user.password = undefined;
-		res.status(200).json(user);
-	} catch (error) {
-		next(error);
-	}
-};
-const uploadUserPhoto = async (req, res, next) => {
-	const user = await User.findById(req.params.id);
-
-	if (!user) {
-		return next(new ErrorResponse('Korisnik nije pronađen', 404));
-	}
-
-	if (!req.files) {
-		return next(new ErrorResponse('Please upload a file', 400));
-	}
-
-	const file = req.files.image;
-	if (!file.mimetype.startsWith('image')) {
-		return next(new ErrorResponse('Datoteka mora biti slika', 400));
-	}
-
-	if (file.size > process.env.MAX_FILE_UPLOAD) {
-		return next(
-			new ErrorResponse(
-				`'Datoteka mora biti manja od ${process.env.MAX_FILE_UPLOAD}`,
-				400,
-			),
-		);
-	}
-	//custom filename
-	file.name = `photo_${user._id}${path.parse(file.name).ext}`;
-
-	file.mv(`${process.env.FILE_UPLOAD_PATH}/${file.name}`, async (err) => {
-		if (err) {
-			console.error(err);
-			return next(new ErrorResponse(`Problem s prijenosom`, 500));
-		}
-		let photoPath = `${process.env.BASE_URL}/uploads/${file.name}`;
-		await User.findByIdAndUpdate(req.params.id, {
-			photo: photoPath,
-		});
-		res.status(200).json({
-			success: true,
-			message: 'Fotografija postavljena',
-			data: photoPath,
-		});
-	});
-};
-
-const getUserPhoto = async (req, res, next) => {
-	const id = req.params.id;
-	try {
-		const user = await User.findById(id);
-		if (!user) {
-			return next(new ErrorResponse('Korisnik nije pronađen', 404));
-		}
-		res.status(200).json(user.photo);
-	} catch (error) {
-		next(error);
-	}
-};
-
 module.exports = {
 	register,
 	login,
-	getUser,
 	confirmAccount,
 	resendConfirmationEmail,
 	forgotPassword,
 	resetPassword,
-	uploadUserPhoto,
-	getUserPhoto,
-	editUser,
 };
