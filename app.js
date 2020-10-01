@@ -8,6 +8,7 @@ const fileupload = require('express-fileupload');
 
 const errorHandler = require('./middleware/error');
 const ridesRoutes = require('./routes/rides');
+const userRoutes = require('./routes/user');
 const authRoutes = require('./routes/auth');
 const chatRoutes = require('./routes/chat');
 
@@ -17,10 +18,9 @@ const app = express();
 const http = require('http').createServer(app);
 
 const io = require('socket.io')(http);
+
 //middlewares
-
 app.use(cors());
-
 app.use(bodyParser.json());
 
 //file upload
@@ -30,6 +30,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/rides', ridesRoutes);
 app.use('/auth', authRoutes);
+app.use('/user', userRoutes);
 app.use('/', chatRoutes);
 
 app.use(errorHandler);
@@ -43,7 +44,10 @@ mongoose.connect(
 		useCreateIndex: true,
 	},
 	(err) => {
-		console.log(err);
+		console.log('Connected');
+		if (err) {
+			console.log(err);
+		}
 	},
 );
 const port = process.env.PORT || 3000;

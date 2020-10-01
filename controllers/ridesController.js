@@ -5,32 +5,19 @@ const ObjectID = require('mongodb').ObjectID;
 
 const getAllRides = async (req, res, next) => {
 	try {
-		const rides = await Ride.find();
+		const rides = await Ride.find().lean();
 		if (!rides) {
 			return next(new ErrorResponse('Nema vožnji', 404));
 		}
 
-		res.status(200).json(rides);
+		res.status(200).json({ rides, success: true });
 	} catch (error) {
 		next(error);
 	}
 };
 
 const postRide = async (req, res, next) => {
-	const start = req.body.start;
-	const end = req.body.end;
-	const date = req.body.date;
-	const startTime = req.body.startTime;
-	const contact = req.body.contact;
-	const seats = req.body.seats;
-	const price = req.body.price;
-	const userId = req.body.userId;
-	const smoking = req.body.smoking;
-	const car = req.body.car;
-
-	const foundUser = await User.findById(userId);
-
-	const ride = new Ride({
+	const {
 		start,
 		end,
 		date,
@@ -38,20 +25,36 @@ const postRide = async (req, res, next) => {
 		contact,
 		seats,
 		price,
-		user: userId,
 		smoking,
 		car,
-		fullName: `${foundUser.name} ${foundUser.lastname}`,
-		userPhoto: foundUser.photo,
-	});
+	} = req.body;
 
+	const userId = req.body.userId;
 	try {
+		const foundUser = await User.findById(userId);
+
+		const ride = new Ride({
+			user: userId,
+			start,
+			end,
+			date,
+			startTime,
+			contact,
+			seats,
+			price,
+			smoking,
+			car,
+			fullName: `${foundUser.name} ${foundUser.lastname}`,
+			userPhoto: foundUser.photo,
+		});
+
 		foundUser.rides.push(ride);
 
 		const savedRide = await ride.save();
 		const savedUser = await foundUser.save();
 
 		res.status(201).json({
+			success: true,
 			message: 'Voznja stvorena',
 			ride: savedRide,
 			foundUser: { _id: foundUser._id },
@@ -88,8 +91,8 @@ const deleteRide = async (req, res, next) => {
 		await userToUpdate.save();
 
 		res.status(200).json({
-			message: 'Voznja uklonjena',
-			ride: removedRide,
+			success: true,
+			message: 'Vožnja uklonjena',
 		});
 		return Promise.all([removedRide, userToUpdate]);
 	} catch (error) {
@@ -98,14 +101,18 @@ const deleteRide = async (req, res, next) => {
 };
 const editRide = async (req, res, next) => {
 	const id = req.params.id;
-	const start = req.body.start;
-	const end = req.body.end;
-	const date = req.body.date;
-	const contact = req.body.contact;
-	const seats = req.body.seats;
-	const price = req.body.price;
-	const smoking = req.body.smoking;
-	const car = req.body.car;
+
+	const {
+		start,
+		end,
+		startTime,
+		date,
+		contact,
+		seats,
+		price,
+		smoking,
+		car,
+	} = req.body;
 
 	try {
 		const foundRide = await Ride.findById(id);
@@ -113,17 +120,24 @@ const editRide = async (req, res, next) => {
 		if (foundRide.user.toString() !== req.userId) {
 			return next(new ErrorResponse('Nemate autorizaciju', 403));
 		}
-		foundRide.start = start;
-		foundRide.end = end;
-		foundRide.date = date;
-		foundRide.contact = contact;
-		foundRide.seats = seats;
-		foundRide.price = price;
-		foundRide.smoking = smoking;
-		foundRide.car = car;
 
-		const savedRide = await foundRide.save();
-		res.status(200).json({ message: 'Vožnja ažurirana', ride: savedRide });
+		const savedRide = await foundRide.updateOne({
+			start,
+			end,
+			startTime,
+			date,
+			contact,
+			seats,
+			price,
+			smoking,
+			car,
+		});
+
+		res.status(200).json({
+			success: true,
+			message: 'Vožnja ažurirana',
+			ride: savedRide,
+		});
 	} catch (error) {
 		error.statusCode = 403;
 		next(error);
@@ -138,22 +152,23 @@ const removeUserFromRide = async (req, res, next) => {
 	foundRide.users = foundRide.users.filter((user) => {
 		return user._id === userId;
 	});
-
 	foundRide.seats++;
 
 	const foundUser = await User.findById(userId);
-
 	foundUser.notifications.push({
 		message: `Uklonjeni ste s vožnje koju ste rezervirali`,
 		_id: new ObjectID(),
 		rideId,
 	});
-
 	foundUser.reservedRides.pull(foundRide._id);
+
 	const userPromise = await foundUser.save();
 	const ridePromise = await foundRide.save();
 
-	res.status(200).json({ message: 'Korisnik uklonjen iz vožnje' });
+	res.status(200).json({
+		success: true,
+		message: 'Korisnik uklonjen iz vožnje',
+	});
 	return Promise.all([userPromise, ridePromise]);
 };
 
@@ -176,6 +191,7 @@ const reserveRide = async (req, res, next) => {
 				return next(new ErrorResponse('Vožnja vec rezervirana', 403));
 			}
 		}
+
 		const userToNotify = await User.findById(foundRide.user);
 		const userToAdd = await User.findById(userId);
 
@@ -215,7 +231,7 @@ const reserveRide = async (req, res, next) => {
 		const userPromise = await userToNotify.save();
 		const ridePromise = await foundRide.save();
 
-		res.status(200).json({ message: 'Vožnja rezervirana' });
+		res.status(200).json({ success: true, message: 'Vožnja rezervirana' });
 
 		return Promise.all([userPromise, ridePromise]);
 	} catch (error) {
@@ -223,43 +239,6 @@ const reserveRide = async (req, res, next) => {
 	}
 };
 
-const readNotification = async (req, res, next) => {
-	const userId = req.body.userId;
-	const notificationId = req.body.notificationId;
-	const foundUser = await User.findById(userId);
-	if (!foundUser) {
-		return next(new ErrorResponse('Korisnik nije pronađen', 404));
-	}
-	try {
-		foundUser.notifications = foundUser.notifications.filter(
-			(notification) => {
-				return (
-					notification._id.toString() !== notificationId.toString()
-				);
-			},
-		);
-		await foundUser.save();
-		res.status(200).json(foundUser.notifications);
-	} catch (error) {
-		next(error);
-	}
-};
-
-const deleteAllNotifications = async (req, res, next) => {
-	const userId = req.params.id;
-
-	const foundUser = await User.findById(userId);
-	if (!foundUser) {
-		return next(new ErrorResponse('Korisnik nije pronađen', 404));
-	}
-	try {
-		foundUser.notifications = undefined;
-		await foundUser.save();
-		res.status(200).json({ message: 'Obavijesti uklonjene' });
-	} catch (error) {
-		next(error);
-	}
-};
 const deleteExpiredRides = async (req, res, next) => {
 	const rides = await Ride.find();
 
@@ -284,7 +263,5 @@ module.exports = {
 	editRide,
 	removeUserFromRide,
 	reserveRide,
-	readNotification,
-	deleteAllNotifications,
 	deleteExpiredRides,
 };

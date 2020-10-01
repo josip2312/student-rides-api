@@ -20,7 +20,7 @@ const rideSchema = new Schema({
 	},
 	contact: {
 		type: String,
-		default: undefined,
+		required: true,
 	},
 	seats: {
 		type: Number,
@@ -28,13 +28,17 @@ const rideSchema = new Schema({
 	},
 	price: {
 		type: String,
-		default: undefined,
+		required: true,
 	},
 	smoking: {
 		type: Boolean,
-		default: undefined,
+		required: true,
 	},
 	car: {
+		type: String,
+		default: undefined,
+	},
+	fullName: {
 		type: String,
 		default: undefined,
 	},
@@ -43,10 +47,7 @@ const rideSchema = new Schema({
 		ref: 'User',
 		required: true,
 	},
-	fullName: {
-		type: String,
-		default: undefined,
-	},
+
 	userPhoto: {
 		type: String,
 		default: undefined,
