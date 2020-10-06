@@ -254,7 +254,7 @@ const deleteExpiredRides = async (req, res, next) => {
 			}
 		}
 	}
-	res.status(200).json(deletedRides);
+	res.status(200).json({ success: true });
 };
 module.exports = {
 	getAllRides,

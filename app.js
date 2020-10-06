@@ -15,9 +15,9 @@ const chatRoutes = require('./routes/chat');
 dotenv.config();
 
 const app = express();
-const http = require('http').createServer(app);
+const server = require('http').createServer(app);
 
-const io = require('socket.io')(http);
+const io = require('socket.io')(server);
 
 //middlewares
 app.use(cors());
@@ -31,7 +31,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/rides', ridesRoutes);
 app.use('/auth', authRoutes);
 app.use('/user', userRoutes);
-app.use('/', chatRoutes);
+app.use('/chats', chatRoutes);
 
 app.use(errorHandler);
 
@@ -52,27 +52,27 @@ mongoose.connect(
 );
 const port = process.env.PORT || 3000;
 
-http.listen(port);
+server.listen(port);
 
 //chatting functionality with socket.io
 
 const Chat = require('./models/Chat');
 
-const rooms = [];
+const rooms = {};
 const users = {};
 
 io.on('connection', (socket) => {
-	socket.on('connected', async (data) => {
-		rooms[data.room] = data.room;
-		socket.join(data.room);
-	});
-
 	socket.on('connectedGlobal', async (data) => {
 		users[data.id] = socket.id;
 	});
 
+	socket.on('connectedRoom', async (data) => {
+		rooms[data.room] = data.room;
+		socket.join(data.room);
+	});
+
 	socket.on('message', async (data) => {
-		socket.to(data.room).emit('message', data.message);
+		io.to(data.room).emit('message', data.message);
 
 		socket
 			.to(users[data.message.receiver])
@@ -80,7 +80,7 @@ io.on('connection', (socket) => {
 
 		const chat = await Chat.findById(data.room);
 		chat.messages.push(data.message);
-		await chat.save();
+		chat.save();
 	});
 
 	socket.on('typing', async (data) => {
