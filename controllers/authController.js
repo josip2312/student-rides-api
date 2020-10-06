@@ -984,10 +984,13 @@ const login = async (req, res, next) => {
 };
 
 const confirmAccount = async (req, res, next) => {
-	const token = req.params.token;
+	const confirmToken = req.params.token;
 
 	try {
-		const decodedToken = jwt.verify(token, process.env.JWT_EMAIL_SECRET);
+		const decodedToken = jwt.verify(
+			confirmToken,
+			process.env.JWT_EMAIL_SECRET,
+		);
 		if (!decodedToken) {
 			return next(new ErrorResponse('Greška', 401));
 		}
@@ -999,9 +1002,19 @@ const confirmAccount = async (req, res, next) => {
 		foundUser.confirmed = true;
 		await foundUser.save();
 
+		const token = jwt.sign(
+			{
+				userId: foundUser._id.toString(),
+			},
+			process.env.JWT_SECRET,
+			{ expiresIn: '3h' },
+		);
+
 		res.status(200).json({
 			success: true,
-			message: 'Email potvrđen',
+			token,
+			userId: foundUser._id.toString(),
+			message: 'Ulogirani ste',
 		});
 	} catch (err) {
 		next(err);

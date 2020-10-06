@@ -22,6 +22,9 @@ const messageSchema = new Schema({
 		type: String,
 		required: true,
 	},
+	createdAt: {
+		type: Date,
+	},
 });
 
 const chatSchema = new Schema({
@@ -41,6 +44,7 @@ const chatSchema = new Schema({
 		type: String,
 		required: true,
 	},
+
 	messages: [
 		{
 			type: messageSchema,

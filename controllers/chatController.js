@@ -12,7 +12,9 @@ const getChats = async (req, res, next) => {
 		let chats = [];
 		for (let i = 0; i < foundUser.chats.length; i++) {
 			let chat = await Chat.findById(foundUser.chats[i]).lean();
-			chats.push(chat);
+			if (chat.messages.length > 0 || chat.sender === id) {
+				chats.push(chat);
+			}
 		}
 
 		res.status(200).json({
@@ -55,11 +57,6 @@ const createNewChat = async (req, res, next) => {
 
 		if (!exists) {
 			const receiverUser = await User.findById(receiver);
-			const tempPassword1 = senderUser.password;
-			const tempPassword2 = receiverUser.password;
-
-			senderUser.password = undefined;
-			receiverUser.password = undefined;
 
 			const chat = new Chat({
 				sender,
@@ -68,9 +65,6 @@ const createNewChat = async (req, res, next) => {
 				receiverFullName: `${receiverUser.name} ${receiverUser.lastname}`,
 				messages: [],
 			});
-
-			senderUser.password = tempPassword1;
-			receiverUser.password = tempPassword2;
 
 			senderUser.chats.push(chat);
 			receiverUser.chats.push(chat);
@@ -81,7 +75,7 @@ const createNewChat = async (req, res, next) => {
 			if (!recPromise || !sendPromise) {
 				return next(new ErrorResponse('Korisnik nije pronađen', 404));
 			}
-			res.status(200).json({ data: 'New chat created', success: true });
+			res.status(200).json({ success: true });
 			return Promise.all([chatPromise, recPromise, sendPromise]);
 		}
 		return next(new ErrorResponse('Razgovor već postoji', 409));
