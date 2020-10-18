@@ -47,6 +47,7 @@ const editUser = async (req, res, next) => {
 		next(error);
 	}
 };
+
 const uploadUserPhoto = async (req, res, next) => {
 	const user = await User.findById(req.params.id);
 
