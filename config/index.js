@@ -1,6 +1,6 @@
 const Cloud = require('@google-cloud/storage');
 const path = require('path');
-const serviceKey = path.join(__dirname, './student-rides-d55ab5cbe0a5.json');
+const serviceKey = path.join(__dirname, './google-credentials.json');
 
 const { Storage } = Cloud;
 const storage = new Storage({
