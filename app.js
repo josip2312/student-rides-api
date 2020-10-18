@@ -25,6 +25,7 @@ const io = require('socket.io')(server);
 //middlewares
 app.use(cors());
 app.use(bodyParser.json());
+app.disable('x-powered-by');
 
 app.use(compression());
 app.use(helmet());
