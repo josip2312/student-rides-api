@@ -55,7 +55,7 @@ const postRide = async (req, res, next) => {
 
 		res.status(201).json({
 			success: true,
-			message: 'Voznja stvorena',
+			message: 'Vožnja stvorena',
 			ride: savedRide,
 			foundUser: { _id: foundUser._id },
 		});
@@ -92,7 +92,6 @@ const deleteRide = async (req, res, next) => {
 
 		res.status(200).json({
 			success: true,
-			message: 'Vožnja uklonjena',
 		});
 		return Promise.all([removedRide, userToUpdate]);
 	} catch (error) {
@@ -167,7 +166,6 @@ const removeUserFromRide = async (req, res, next) => {
 
 	res.status(200).json({
 		success: true,
-		message: 'Korisnik uklonjen iz vožnje',
 	});
 	return Promise.all([userPromise, ridePromise]);
 };
@@ -243,7 +241,7 @@ const deleteExpiredRides = async (req, res, next) => {
 	const rides = await Ride.find();
 
 	const deletedRides = [];
-	for (let i = 0; i > rides.length; i++) {
+	for (let i = 0; i < rides.length; i++) {
 		if (rides[i].date.getTime() < Date.now()) {
 			const deletedRide = await Ride.deleteOne({ _id: rides[i]._id });
 			if (deletedRide) {
@@ -254,7 +252,7 @@ const deleteExpiredRides = async (req, res, next) => {
 			}
 		}
 	}
-	res.status(200).json({ success: true });
+	res.status(200).json({ success: true, data: deletedRides });
 };
 module.exports = {
 	getAllRides,

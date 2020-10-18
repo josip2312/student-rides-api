@@ -22,6 +22,7 @@ const io = require('socket.io')(server);
 //middlewares
 app.use(cors());
 app.use(bodyParser.json());
+app.disable('x-powered-by');
 
 //file upload
 app.use(fileupload());
