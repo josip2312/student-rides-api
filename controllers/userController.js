@@ -72,7 +72,7 @@ const uploadUserPhoto = async (req, res, next) => {
 			),
 		);
 	}
-	//uploading to google cloud storage
+	//uploading to google cloud storagee
 	const bucket = googleStorage.bucket('student_rides_images');
 
 	const blob = bucket.file(file.name);
