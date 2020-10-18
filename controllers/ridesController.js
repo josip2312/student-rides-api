@@ -113,7 +113,6 @@ const editRide = async (req, res, next) => {
 		car,
 	} = req.body;
 
-	console.log(date);
 	try {
 		const foundRide = await Ride.findById(id);
 
