@@ -39,7 +39,6 @@ const editUser = async (req, res, next) => {
 			},
 		);
 
-		user.password = undefined;
 		res.status(200).json({ success: true });
 	} catch (error) {
 		next(error);
@@ -56,7 +55,8 @@ const uploadUserPhoto = async (req, res, next) => {
 		return next(new ErrorResponse('Please upload a file', 400));
 	}
 
-	const file = req.files.image;
+	const file = req.files.file;
+
 	if (!file.mimetype.startsWith('image')) {
 		return next(new ErrorResponse('Datoteka mora biti slika', 400));
 	}
@@ -69,26 +69,31 @@ const uploadUserPhoto = async (req, res, next) => {
 			),
 		);
 	}
-	const newName = `photo_${user._id}${path.parse(file.name).ext}`;
-	sharp(file.data)
-		.resize({ width: 500 })
-		.toFile(`${process.env.FILE_UPLOAD_PATH}/${newName}`)
-		.then(async (newFileInfo) => {
-			let photoPath = `${process.env.BASE_URL}/uploads/${newName}`;
-			await User.findByIdAndUpdate(req.params.id, {
-				photo: photoPath,
+
+	try {
+		const newName = `photo_${user._id}${path.parse(file.name).ext}`;
+		sharp(file.data)
+			.resize({ width: 500 })
+			.toFile(`${process.env.FILE_UPLOAD_PATH}/${newName}`)
+			.then(async (newFileInfo) => {
+				let photoPath = `${process.env.BASE_URL}/uploads/${newName}`;
+				await User.findByIdAndUpdate(req.params.id, {
+					photo: photoPath,
+				});
+				res.status(200).json({
+					success: true,
+					message: 'Fotografija postavljena',
+					data: photoPath,
+				});
+			})
+			.catch((err) => {
+				if (err) {
+					return next(new ErrorResponse('Greška u prijenosu ', 500));
+				}
 			});
-			res.status(200).json({
-				success: true,
-				message: 'Fotografija postavljena',
-				data: photoPath,
-			});
-		})
-		.catch((err) => {
-			if (err) {
-				return next(new ErrorResponse('Greška u prijenosu ', 500));
-			}
-		});
+	} catch (error) {
+		next(error);
+	}
 };
 
 const readNotification = async (req, res, next) => {
