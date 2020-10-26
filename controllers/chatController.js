@@ -116,7 +116,7 @@ const deleteChat = async (req, res, next) => {
 		const user1Save = await user1.save();
 		const user2Save = await user2.save();
 
-		res.status(200).json({ message: 'Razgovor uklonjen', success: true });
+		res.status(200).json({ success: true });
 		return Promise.all([removedChat, user1Save, user2Save]);
 	} catch (error) {
 		next(error);

@@ -6,6 +6,9 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const fileupload = require('express-fileupload');
 
+const compression = require('compression');
+const helmet = require('helmet');
+
 const errorHandler = require('./middleware/error');
 const ridesRoutes = require('./routes/rides');
 const userRoutes = require('./routes/user');
@@ -22,6 +25,10 @@ const io = require('socket.io')(server);
 //middlewares
 app.use(cors());
 app.use(bodyParser.json());
+app.disable('x-powered-by');
+
+app.use(compression());
+app.use(helmet());
 
 //file upload
 app.use(fileupload());
