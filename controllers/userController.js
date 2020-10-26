@@ -78,6 +78,8 @@ const uploadUserPhoto = async (req, res, next) => {
 
 		const blob = bucket.file(file.name);
 		const remoteWriteStream = blob.createWriteStream();
+		console.log(blob);
+		console.log(file.name);
 		sharp(file.data)
 			.resize({ width: 500 })
 			.pipe(remoteWriteStream)
