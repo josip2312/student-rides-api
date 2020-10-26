@@ -926,7 +926,7 @@ const resendConfirmationEmail = async (req, res, next) => {
 		});
 		res.status(200).json({
 			success: true,
-			message: `Email ponovno poslan`,
+			message: `Email je ponovno poslan`,
 			userId: user._id,
 		});
 	} catch (err) {

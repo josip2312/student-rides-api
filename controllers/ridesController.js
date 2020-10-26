@@ -55,7 +55,7 @@ const postRide = async (req, res, next) => {
 
 		res.status(201).json({
 			success: true,
-			message: 'Voznja stvorena',
+			message: 'Vožnja stvorena',
 			ride: savedRide,
 			foundUser: { _id: foundUser._id },
 		});
@@ -90,7 +90,6 @@ const deleteRide = async (req, res, next) => {
 
 		res.status(200).json({
 			success: true,
-			message: 'Vožnja uklonjena',
 		});
 		return Promise.all([removedRide, userToUpdate]);
 	} catch (error) {
