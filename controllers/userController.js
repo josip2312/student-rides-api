@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const ErrorResponse = require('../utils/errorResponse');
 const util = require('util');
+const path = require('path');
 
 const sharp = require('sharp');
 const googleStorage = require('../config/');
