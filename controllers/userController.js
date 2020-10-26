@@ -1,7 +1,6 @@
 const User = require('../models/User');
 const ErrorResponse = require('../utils/errorResponse');
 const util = require('util');
-const path = require('path');
 
 const sharp = require('sharp');
 const googleStorage = require('../config/');
@@ -74,25 +73,28 @@ const uploadUserPhoto = async (req, res, next) => {
 	}
 
 	try {
-		const newName = `photo_${user._id}${path.parse(file.name).ext}`;
+		//uploading to google cloud storagee
+		const bucket = googleStorage.bucket('student_rides_images');
+
+		const blob = bucket.file(file.name);
+		const remoteWriteStream = blob.createWriteStream();
 		sharp(file.data)
 			.resize({ width: 500 })
-			.toFile(`${process.env.FILE_UPLOAD_PATH}/${newName}`)
-			.then(async (newFileInfo) => {
-				let photoPath = `${process.env.BASE_URL}/uploads/${newName}`;
+			.pipe(remoteWriteStream)
+			.on('error', () => {
+				return next(new ErrorResponse('Greška u prijenosu'));
+			})
+			.on('finish', async () => {
+				const publicUrl = util.format(
+					`https://storage.googleapis.com/${bucket.name}/${blob.name}`,
+				);
 				await User.findByIdAndUpdate(req.params.id, {
-					photo: photoPath,
+					photo: publicUrl,
 				});
 				res.status(200).json({
-					success: true,
 					message: 'Fotografija postavljena',
-					data: photoPath,
+					data: publicUrl,
 				});
-			})
-			.catch((err) => {
-				if (err) {
-					return next(new ErrorResponse('Greška u prijenosu ', 500));
-				}
 			});
 	} catch (error) {
 		next(error);
