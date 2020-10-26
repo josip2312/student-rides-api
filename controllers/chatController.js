@@ -106,7 +106,6 @@ const deleteChat = async (req, res, next) => {
 			user1.chats.pull(foundChat._id);
 			const user1Save = await user1.save();
 			Promise.all([removedChat, user1Save]);
-
 			return next(new ErrorResponse('Korisnik ne postoji', 404));
 		}
 

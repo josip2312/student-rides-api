@@ -1,11 +1,13 @@
 const { validationResult } = require('express-validator');
-const bcrypt = require('bcryptjs');
+
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const sendgridTransport = require('nodemailer-sendgrid-transport');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
+const generateToken = require('../utils/generateToken');
+const generateResetToken = require('../utils/generateResetToken');
 const User = require('../models/User');
 const ErrorResponse = require('../utils/errorResponse');
 
@@ -21,28 +23,19 @@ const register = async (req, res, next) => {
 	const errors = validationResult(req);
 
 	if (!errors.isEmpty()) {
-		return next(new ErrorResponse('Email adresa već postoji'));
+		return next(new ErrorResponse('Korisnik već postoji'));
 	}
 	const { name, lastname, email, password } = req.body;
 
 	try {
-		const salt = await bcrypt.genSalt();
-		const hashedPassword = await bcrypt.hash(password, salt);
-
 		const user = await User.create({
 			name,
 			lastname,
 			email,
-			password: hashedPassword,
+			password,
 		});
-
-		const token = jwt.sign(
-			{
-				userId: user._id.toString(),
-			},
-			process.env.JWT_EMAIL_SECRET,
-			{ expiresIn: '12h' },
-		);
+		const token = generateToken(user._id);
+		const emailToken = generateResetToken(user._id);
 
 		transporter.sendMail({
 			to: email,
@@ -353,7 +346,7 @@ const register = async (req, res, next) => {
 													"
 												>
 													<a
-														href="${process.env.CLIENT_URL}/auth/confirmaccount/${token}"
+														href="${process.env.CLIENT_URL}/auth/confirmaccount/${emailToken}"
 														target="_blank"
 														style="
 															display: inline-block;
@@ -484,6 +477,7 @@ const register = async (req, res, next) => {
 			success: true,
 			message: `Registracija uspjesna`,
 			userId: user._id,
+			token,
 		});
 	} catch (err) {
 		next(err);
@@ -492,13 +486,7 @@ const register = async (req, res, next) => {
 const resendConfirmationEmail = async (req, res, next) => {
 	try {
 		const user = await User.findById(req.params.id);
-		const token = jwt.sign(
-			{
-				userId: user._id.toString(),
-			},
-			process.env.JWT_EMAIL_SECRET,
-			{ expiresIn: '12h' },
-		);
+		const token = generateResetToken(user._id);
 
 		transporter.sendMail({
 			to: user.email,
@@ -949,34 +937,29 @@ const login = async (req, res, next) => {
 	const { email, password } = req.body;
 
 	try {
-		const foundUser = await User.findOne({ email: email });
-		if (!foundUser) {
+		const user = await User.findOne({ email: email });
+		if (!user) {
 			return next(new ErrorResponse('Neispravni podaci za prijavu', 401));
 		}
 
-		if (!foundUser.confirmed) {
+		if (!user.confirmed) {
 			return next(
 				new ErrorResponse('Molimo potvrdite email adresu'),
 				401,
 			);
 		}
 
-		const comparison = await bcrypt.compare(password, foundUser.password);
+		const comparison = await user.matchPassword(password);
+
 		if (!comparison) {
 			return next(new ErrorResponse('Neispravni podaci za prijavu', 401));
 		}
-		const token = jwt.sign(
-			{
-				userId: foundUser._id.toString(),
-			},
-			process.env.JWT_SECRET,
-			{ expiresIn: '3h' },
-		);
+
 		res.status(200).json({
 			success: true,
-			token: token,
-			userId: foundUser._id.toString(),
-			message: 'Ulogirani ste',
+			token: generateToken(user._id),
+			userId: user._id.toString(),
+			message: 'Prijavljeni ste',
 		});
 	} catch (err) {
 		next(err);
@@ -995,26 +978,18 @@ const confirmAccount = async (req, res, next) => {
 			return next(new ErrorResponse('Greška', 401));
 		}
 
-		const foundUser = await User.findById(decodedToken.userId);
-		if (!foundUser) {
+		const user = await User.findById(decodedToken.id);
+		if (!user) {
 			return next(new ErrorResponse('Korisnik nije pronađen', 401));
 		}
-		foundUser.confirmed = true;
-		await foundUser.save();
-
-		const token = jwt.sign(
-			{
-				userId: foundUser._id.toString(),
-			},
-			process.env.JWT_SECRET,
-			{ expiresIn: '3h' },
-		);
+		user.confirmed = true;
+		await user.save();
 
 		res.status(200).json({
 			success: true,
-			token,
-			userId: foundUser._id.toString(),
-			message: 'Ulogirani ste',
+			token: generateToken(user._id),
+			userId: user._id.toString(),
+			message: 'Prijavljeni ste',
 		});
 	} catch (err) {
 		next(err);
@@ -1501,27 +1476,19 @@ const resetPassword = async (req, res, next) => {
 			return next(new ErrorResponse('Nije dopušteno', 400));
 		}
 		const password = req.body.password;
-		const salt = await bcrypt.genSalt();
-		const hashedPassword = await bcrypt.hash(password, salt);
-		user.password = hashedPassword;
+
+		user.password = password;
 
 		user.resetPasswordToken = undefined;
 		user.resetPasswordExpire = undefined;
 
 		await user.save();
 
-		const token = jwt.sign(
-			{
-				userId: user._id.toString(),
-			},
-			process.env.JWT_SECRET,
-			{ expiresIn: '3h' },
-		);
 		res.status(200).json({
 			success: true,
-			token: token,
+			token: generateToken(user._id),
 			userId: user._id.toString(),
-			message: 'Ulogirani ste',
+			message: 'Prijavljeni ste',
 		});
 	} catch (error) {
 		next(error);
