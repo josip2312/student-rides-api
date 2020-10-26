@@ -35,6 +35,8 @@ const register = async (req, res, next) => {
 			password,
 		});
 		const token = generateToken(user._id);
+		const emailToken = generateResetToken(user._id);
+
 		transporter.sendMail({
 			to: email,
 			from: process.env.FROM_EMAIL,
@@ -344,7 +346,7 @@ const register = async (req, res, next) => {
 													"
 												>
 													<a
-														href="${process.env.CLIENT_URL}/auth/confirmaccount/${token}"
+														href="${process.env.CLIENT_URL}/auth/confirmaccount/${emailToken}"
 														target="_blank"
 														style="
 															display: inline-block;
@@ -976,7 +978,7 @@ const confirmAccount = async (req, res, next) => {
 			return next(new ErrorResponse('Greška', 401));
 		}
 
-		const user = await User.findById(decodedToken.userId);
+		const user = await User.findById(decodedToken.id);
 		if (!user) {
 			return next(new ErrorResponse('Korisnik nije pronađen', 401));
 		}
