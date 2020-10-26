@@ -1,15 +1,6 @@
 const express = require('express');
 const router = express.Router();
 
-const multer = require('multer');
-
-const multerMid = multer({
-	storage: multer.memoryStorage(),
-	limits: {
-		fileSize: 5 * 1024 * 1024,
-	},
-});
-
 const isAuth = require('../middleware/isAuth');
 
 const userController = require('../controllers/userController');
@@ -21,7 +12,6 @@ router.patch('/edit/:id', isAuth, userController.editUser);
 router.patch(
 	'/:id/photo',
 	isAuth,
-	multerMid.single('file'),
 
 	userController.uploadUserPhoto,
 );
