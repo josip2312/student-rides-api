@@ -81,6 +81,7 @@ const deleteRide = async (req, res, next) => {
 		}
 
 		const removedRide = await Ride.deleteOne({ _id: id });
+
 		const userToUpdate = await User.findById(req.userId);
 
 		userToUpdate.rides.pull(id);
