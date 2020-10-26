@@ -41,7 +41,6 @@ const editUser = async (req, res, next) => {
 			},
 		);
 
-		user.password = undefined;
 		res.status(200).json({ success: true });
 	} catch (error) {
 		next(error);
@@ -72,29 +71,31 @@ const uploadUserPhoto = async (req, res, next) => {
 			),
 		);
 	}
-	//uploading to google cloud storagee
-	const bucket = googleStorage.bucket('student_rides_images');
 
-	const blob = bucket.file(file.name);
-	const remoteWriteStream = blob.createWriteStream();
-	sharp(file.data)
-		.resize({ width: 500 })
-		.pipe(remoteWriteStream)
-		.on('error', () => {
-			return next(new ErrorResponse('Greška u prijenosu'));
-		})
-		.on('finish', async () => {
-			const publicUrl = util.format(
-				`https://storage.googleapis.com/${bucket.name}/${blob.name}`,
-			);
-			await User.findByIdAndUpdate(req.params.id, {
-				photo: publicUrl,
+	try {
+		const newName = `photo_${user._id}${path.parse(file.name).ext}`;
+		sharp(file.data)
+			.resize({ width: 500 })
+			.toFile(`${process.env.FILE_UPLOAD_PATH}/${newName}`)
+			.then(async (newFileInfo) => {
+				let photoPath = `${process.env.BASE_URL}/uploads/${newName}`;
+				await User.findByIdAndUpdate(req.params.id, {
+					photo: photoPath,
+				});
+				res.status(200).json({
+					success: true,
+					message: 'Fotografija postavljena',
+					data: photoPath,
+				});
+			})
+			.catch((err) => {
+				if (err) {
+					return next(new ErrorResponse('Greška u prijenosu ', 500));
+				}
 			});
-			res.status(200).json({
-				message: 'Fotografija postavljena',
-				data: publicUrl,
-			});
-		});
+	} catch (error) {
+		next(error);
+	}
 };
 
 const readNotification = async (req, res, next) => {

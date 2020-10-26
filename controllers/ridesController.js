@@ -72,9 +72,6 @@ const deleteRide = async (req, res, next) => {
 		if (!foundRide) {
 			return next(new ErrorResponse('Voznja nije pronađena', 404));
 		}
-		if (foundRide.user.toString() !== req.userId) {
-			return next(new ErrorResponse('Niste autorizirani', 403));
-		}
 
 		for (let i = 0; i < foundRide.users.length; i++) {
 			let user = await User.findById(foundRide.users[i]._id);
@@ -84,6 +81,7 @@ const deleteRide = async (req, res, next) => {
 		}
 
 		const removedRide = await Ride.deleteOne({ _id: id });
+
 		const userToUpdate = await User.findById(req.userId);
 
 		userToUpdate.rides.pull(id);
@@ -116,10 +114,6 @@ const editRide = async (req, res, next) => {
 	try {
 		const foundRide = await Ride.findById(id);
 
-		if (foundRide.user.toString() !== req.userId) {
-			return next(new ErrorResponse('Nemate autorizaciju', 403));
-		}
-
 		const savedRide = await foundRide.updateOne({
 			start,
 			end,
@@ -146,28 +140,33 @@ const removeUserFromRide = async (req, res, next) => {
 	const rideId = req.params.id;
 	const userId = req.body.userId;
 
-	const foundRide = await Ride.findById(rideId);
+	try {
+		const foundRide = await Ride.findById(rideId);
 
-	foundRide.users = foundRide.users.filter((user) => {
-		return user._id === userId;
-	});
-	foundRide.seats++;
+		foundRide.users = foundRide.users.filter((user) => {
+			return user._id === userId;
+		});
+		foundRide.seats++;
 
-	const foundUser = await User.findById(userId);
-	foundUser.notifications.push({
-		message: `Uklonjeni ste s vožnje koju ste rezervirali`,
-		_id: new ObjectID(),
-		rideId,
-	});
-	foundUser.reservedRides.pull(foundRide._id);
+		const foundUser = await User.findById(userId);
+		foundUser.notifications.push({
+			message: `Uklonjeni ste s vožnje koju ste rezervirali`,
+			_id: new ObjectID(),
+			rideId,
+		});
+		foundUser.reservedRides.pull(foundRide._id);
 
-	const userPromise = await foundUser.save();
-	const ridePromise = await foundRide.save();
+		const userPromise = await foundUser.save();
+		const ridePromise = await foundRide.save();
 
-	res.status(200).json({
-		success: true,
-	});
-	return Promise.all([userPromise, ridePromise]);
+		res.status(200).json({
+			success: true,
+			message: 'Korisnik uklonjen iz vožnje',
+		});
+		return Promise.all([userPromise, ridePromise]);
+	} catch (error) {
+		next(error);
+	}
 };
 
 const reserveRide = async (req, res, next) => {
@@ -241,18 +240,22 @@ const deleteExpiredRides = async (req, res, next) => {
 	const rides = await Ride.find();
 
 	const deletedRides = [];
-	for (let i = 0; i < rides.length; i++) {
-		if (rides[i].date.getTime() < Date.now()) {
-			const deletedRide = await Ride.deleteOne({ _id: rides[i]._id });
-			if (deletedRide) {
-				const user = await User.findById(rides[i].user);
-				deletedRides.push(deletedRide);
-				user.rides.pull(rides[i]._id);
-				await user.save();
+	try {
+		for (let i = 0; i > rides.length; i++) {
+			if (rides[i].date.getTime() < Date.now()) {
+				const deletedRide = await Ride.deleteOne({ _id: rides[i]._id });
+				if (deletedRide) {
+					const user = await User.findById(rides[i].user);
+					deletedRides.push(deletedRide);
+					user.rides.pull(rides[i]._id);
+					await user.save();
+				}
 			}
 		}
+		res.status(200).json({ success: true });
+	} catch (error) {
+		next(error);
 	}
-	res.status(200).json({ success: true, data: deletedRides });
 };
 module.exports = {
 	getAllRides,
